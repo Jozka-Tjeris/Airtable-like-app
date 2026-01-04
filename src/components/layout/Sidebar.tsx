@@ -18,7 +18,7 @@ export function Sidebar() {
                     </svg>
                     <div className="ml-[6px] truncate">Starred</div>
                 </a>
-                <button className="flex p-[4px] focus:outline-none rounded hover:bg-gray-200" aria-label="Expand starred">
+                <button className="flex p-[4px] focus:outline-none rounded hover:bg-gray-200">
                     <svg width="16" height="16" viewBox="0 0 16 16" className="flex-none animate text-gray-700" style={{
                       transform: "rotate(-90deg)",
                       transformOrigin: "center",

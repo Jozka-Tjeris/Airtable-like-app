@@ -4,17 +4,14 @@ export function TopBar(){
   <div className="flex items-center flex-auto">
     {/* <!-- Collapse sidebar button --> */}
     <div tabIndex={0} role="button" 
-         className="flex items-center rounded focus-visible:outline focus-visible:ring px-[2px] pr-[4px] cursor-pointer hover:bg-gray-100" 
-         aria-label="Collapse sidebar" 
-         aria-controls="e149a03a3f1527d909d6eb556805d2d4">
+         className="flex items-center rounded focus-visible:outline focus-visible:ring px-[2px] pr-[4px] cursor-pointer hover:bg-gray-100">
         <svg width={20} height={20} viewBox="0 0 16 16" style={{ shapeRendering: "geometricPrecision" }} >
             <use fill="currentColor" href="/assets/icon_definitions.svg#List"/>
         </svg>
     </div>
 
     {/* <!-- Airtable logo --> */}
-    <a href="/" aria-label="Airtable home" 
-       className="flex items-center ml-[6px] px-[6px] py-[6px] rounded focus-visible:outline focus-visible:ring">
+    <a href="" className="flex items-center ml-[6px] px-[6px] py-[6px] rounded focus-visible:outline focus-visible:ring">
       <svg width="102" height="22.2" viewBox="0 0 680 148" xmlns="http://www.w3.org/2000/svg">
         {/* <!-- Logo paths kept as-is --> */}
         <g>
@@ -44,8 +41,7 @@ export function TopBar(){
   <div className="flex items-center flex-auto justify-end space-x-[6px]">
     {/* <!-- Help button --> */}
     <div tabIndex={0} role="button" 
-         className="flex items-center justify-center w-[28px] h-[28px] rounded-full bg-gray-100 hover:bg-gray-200 cursor-pointer focus-visible:outline focus-visible:ring" 
-         aria-label="Help menu">
+         className="flex items-center justify-center w-[28px] h-[28px] rounded-full bg-gray-100 hover:bg-gray-200 cursor-pointer focus-visible:outline focus-visible:ring">
       <svg width="16" height="16" viewBox="0 0 16 16" className="flex-none text-gray-600">
         <use fill="currentColor" href="/assets/icon_definitions.svg#Question"></use>
       </svg>
@@ -53,8 +49,7 @@ export function TopBar(){
 
     {/* <!-- Notification bell --> */}
     <div tabIndex={0} role="button" 
-         className="relative flex items-center justify-center w-[28px] h-[28px] rounded-full bg-gray-100 hover:bg-gray-200 cursor-pointer focus-visible:outline focus-visible:ring" 
-         aria-label="No unseen notifications">
+         className="relative flex items-center justify-center w-[28px] h-[28px] rounded-full bg-gray-100 hover:bg-gray-200 cursor-pointer focus-visible:outline focus-visible:ring">
       <div className="flex items-center justify-center w-[28px] h-[28px]">
         <svg width="16" height="16" viewBox="0 0 16 16" className="flex-none text-gray-600">
           <use fill="currentColor" href="/assets/icon_definitions.svg#Bell"></use>
@@ -70,8 +65,7 @@ export function TopBar(){
 
     {/* <!-- User account --> */}
     <div tabIndex={0} role="button" 
-         className="flex items-center justify-center w-[28px] h-[28px] rounded-full shadow hover:shadow-md cursor-pointer focus-visible:outline focus-visible:ring" 
-         aria-label="Account">
+         className="flex items-center justify-center w-[28px] h-[28px] rounded-full shadow hover:shadow-md cursor-pointer focus-visible:outline focus-visible:ring">
       <div className="flex items-center justify-center w-full h-full">
         <div className="relative w-[28px] h-[28px] rounded-full bg-blue-600 border border-white text-white flex items-center justify-center font-semibold">
           J
