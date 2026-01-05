@@ -20,19 +20,29 @@ export function BaseTable() {
   const [data, setData] = useState<Row[]>(rows);
   const [columnsState, setColumnsState] = useState<typeof columnMeta>(columnMeta);
 
+  // -----------------------------
+  // Track the currently active cell
+  // -----------------------------
+  const [activeCell, setActiveCell] = useState<{ rowIndex: number; columnId: string } | null>(
+    null
+  );
+
+  // -----------------------------
   // Function to update a single cell
+  // -----------------------------
   const updateCell = (rowIndex: number, columnId: string, value: string) => {
     setData(old =>
       old.map((row, i) => (i === rowIndex ? { ...row, [columnId]: value } : row))
     );
   };
 
-  // Function to add a new column dynamically
+  // -----------------------------
+  // Dynamic column functions
+  // -----------------------------
   const addColumn = (id: keyof Row, label: string) => {
     setColumnsState(old => [...old, { id, label }]);
   };
 
-  // Function to remove a column dynamically
   const removeColumn = (id: keyof Row) => {
     setColumnsState(old => old.filter(col => col.id !== id));
   };
@@ -52,6 +62,12 @@ export function BaseTable() {
                 ? String(info.getValue())
                 : ""
             }
+            isActive={
+              activeCell?.rowIndex === info.row.index && activeCell?.columnId === info.column.id
+            }
+            onClick={() =>
+              setActiveCell({ rowIndex: info.row.index, columnId: info.column.id })
+            }
             onChange={newValue =>
               info.table.options.meta?.updateCell(info.row.index, info.column.id, newValue)
             }
@@ -62,7 +78,7 @@ export function BaseTable() {
         minSize: 80,
         maxSize: 300,
       })),
-    [columnsState] // recompute whenever columns change
+    [columnsState, activeCell]
   );
 
   // -----------------------------
@@ -76,7 +92,9 @@ export function BaseTable() {
     defaultColumn: { size: 150 },
     getCoreRowModel: getCoreRowModel(),
     meta: {
-      updateCell, // used by TableCell onChange
+      updateCell,
+      addColumn,
+      removeColumn,
     },
   });
 

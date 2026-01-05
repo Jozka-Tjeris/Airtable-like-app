@@ -3,48 +3,24 @@ import { useEffect, useState } from "react";
 type TableCellProps = {
   value: string;
   onChange: (newValue: string) => void;
-  onMoveNext?: () => void;    // for Tab / arrow navigation
-  onMovePrev?: () => void;    // optional for Shift+Tab
+  onClick: () => void; // notify parent that this cell is active
+  isActive?: boolean;  // active state from parent
 };
 
-export function TableCell({ value, onChange, onMoveNext, onMovePrev }: TableCellProps) {
+export function TableCell({ value, onChange, onClick, isActive = false }: TableCellProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [localValue, setLocalValue] = useState(value);
 
-  // Keep local state in sync with external changes
-  useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
+  useEffect(() => setLocalValue(value), [value]);
 
   const commit = () => {
     setIsEditing(false);
-    if (localValue !== value) {
-      console.log("SV");
-      onChange(localValue);
-    }
+    if (localValue !== value) onChange(localValue);
   };
 
   const cancel = () => {
     setLocalValue(value);
     setIsEditing(false);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      commit();
-      // Optionally move to next row/cell
-      onMoveNext?.();
-    } else if (e.key === "Escape") {
-      cancel();
-    } else if (e.key === "Tab") {
-      commit();
-      e.preventDefault(); // prevent default tab focus
-      if (e.shiftKey) {
-        onMovePrev?.();
-      } else {
-        onMoveNext?.();
-      }
-    }
   };
 
   if (isEditing) {
@@ -56,15 +32,32 @@ export function TableCell({ value, onChange, onMoveNext, onMovePrev }: TableCell
         value={localValue}
         onChange={e => setLocalValue(e.target.value)}
         onBlur={commit}
-        onKeyDown={handleKeyDown}
+        onKeyDown={e => {
+          if (e.key === "Enter") commit();
+          else if (e.key === "Escape") cancel();
+        }}
       />
     );
   }
 
+  const handleClick = () => {
+    if (!isActive) {
+      // Cell not active, select it
+      onClick();
+    } else {
+      // Cell is already active, enter edit mode
+      setIsEditing(true);
+    }
+  };
+
   return (
     <div
-      className="w-full px-2 py-1 truncate cursor-text hover:bg-gray-50"
-      onDoubleClick={() => setIsEditing(true)}
+      tabIndex={0}
+      className={`
+        w-full px-2 py-1 truncate cursor-text hover:bg-gray-50 
+        ${isActive ? "border-2 border-blue-500 bg-blue-50" : "border"}
+      `}
+      onClick={handleClick}
     >
       {value}
     </div>
