@@ -8,7 +8,7 @@ export function TableBody() {
   return (
     <tbody>
       {table.getRowModel().rows.map(row => (
-        <tr key={row.id} className="border-b last:border-0">
+        <tr key={row.id} className="border-b last:border-0 hover:bg-[#f0f0f0]">
           {row.getVisibleCells().map(cell => (
             <td key={cell.id} className="px-4 py-2 border-r">
               {flexRender(
