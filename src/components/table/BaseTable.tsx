@@ -136,7 +136,7 @@ export function BaseTable() {
         minSize: 80,
         maxSize: 300,
       })),
-    [columnsState, activeCell, data, moveToCell]
+    [columnsState, activeCell, moveToCell, registerRef]
   );
 
   // -----------------------------
