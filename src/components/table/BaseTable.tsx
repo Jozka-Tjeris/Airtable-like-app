@@ -5,7 +5,7 @@ import {
   getCoreRowModel,
   type ColumnDef,
 } from "@tanstack/react-table";
-import { TableContext } from "./TableContext";
+import { TableContext, type TableContextType } from "./TableContext";
 import { TableHeader } from "./TableHeader";
 import { TableBody } from "./TableBody";
 
@@ -32,7 +32,7 @@ export function BaseTable() {
   });
 
   return (
-    <TableContext.Provider value={{ table }}>
+    <TableContext.Provider value={{ table } as TableContextType<unknown>}>
       <div className="w-full overflow-x-auto border">
         <div className="max-h-[calc(100vh-136px)] overflow-y-auto">
           <table className="border-collapse table-auto w-max">
