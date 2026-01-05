@@ -1,7 +1,7 @@
 import "@tanstack/react-table";
 
 declare module "@tanstack/react-table" {
-  interface TableMeta<TData> {
+  interface TableMeta {
     updateCell: (
       rowIndex: number,
       columnId: string,

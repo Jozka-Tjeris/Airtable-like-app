@@ -14,56 +14,75 @@ import { TableCell } from "./TableCell";
 import { columns as columnMeta, rows, type Row } from "./mockTableData";
 
 export function BaseTable() {
+  // -----------------------------
+  // Dynamic state for rows & columns
+  // -----------------------------
   const [data, setData] = useState<Row[]>(rows);
+  const [columnsState, setColumnsState] = useState<typeof columnMeta>(columnMeta);
 
-  const updateCell = (
-    rowIndex: number,
-    columnId: string,
-    value: string
-  ) => {
+  // Function to update a single cell
+  const updateCell = (rowIndex: number, columnId: string, value: string) => {
     setData(old =>
-      old.map((row, i) =>
-        i === rowIndex ? { ...row, [columnId]: value } : row
-      )
+      old.map((row, i) => (i === rowIndex ? { ...row, [columnId]: value } : row))
     );
   };
 
-  const tableColumns: ColumnDef<Row>[] = useMemo(() =>
-    columnMeta.map(col => ({
-      accessorKey: col.id,
-      header: col.label,
-      cell: info => (
-        <TableCell
-          value={String(info.getValue() ?? "")}
-          onChange={newValue =>
-            info.table.options.meta?.updateCell(
-              info.row.index,
-              info.column.id,
-              newValue
-            )
-          }
-        />
-      ),
-      enableResizing: true,
-      size: 150,
-      minSize: 80,
-      maxSize: 300,
-    })),
-    [columnMeta] // only rebuild if columnMeta changes
+  // Function to add a new column dynamically
+  const addColumn = (id: keyof Row, label: string) => {
+    setColumnsState(old => [...old, { id, label }]);
+  };
+
+  // Function to remove a column dynamically
+  const removeColumn = (id: keyof Row) => {
+    setColumnsState(old => old.filter(col => col.id !== id));
+  };
+
+  // -----------------------------
+  // Columns for TanStack Table
+  // -----------------------------
+  const tableColumns: ColumnDef<Row>[] = useMemo(
+    () =>
+      columnsState.map(col => ({
+        accessorKey: col.id,
+        header: col.label,
+        cell: info => (
+          <TableCell
+            value={
+              typeof info.getValue() === "string" || typeof info.getValue() === "number"
+                ? String(info.getValue())
+                : ""
+            }
+            onChange={newValue =>
+              info.table.options.meta?.updateCell(info.row.index, info.column.id, newValue)
+            }
+          />
+        ),
+        enableResizing: true,
+        size: 150,
+        minSize: 80,
+        maxSize: 300,
+      })),
+    [columnsState] // recompute whenever columns change
   );
 
+  // -----------------------------
+  // Create the table instance
+  // -----------------------------
   const table = useReactTable({
-    data: data,
+    data,
     columns: tableColumns,
-    columnResizeMode: 'onChange',
+    columnResizeMode: "onChange",
     enableColumnResizing: true,
     defaultColumn: { size: 150 },
     getCoreRowModel: getCoreRowModel(),
     meta: {
-      updateCell,
-    }
+      updateCell, // used by TableCell onChange
+    },
   });
 
+  // -----------------------------
+  // Render
+  // -----------------------------
   return (
     <TableContext.Provider value={{ table } as TableContextType<unknown>}>
       <div className="w-full overflow-x-auto border">
@@ -73,7 +92,7 @@ export function BaseTable() {
             <TableBody />
           </table>
         </div>
-    </div>
+      </div>
     </TableContext.Provider>
   );
 }
