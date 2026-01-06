@@ -5,6 +5,9 @@ import { type Table } from "@tanstack/react-table";
 
 export type TableContextType<TData> = {
   table: Table<TData>;
+  handleAddColumn: () => void;
+  handleDeleteColumn: (columnId: string) => void;
+  handleRenameColumn: (columnId: string, newLabel: string) => void;
 };
 
 export const TableContext = createContext<TableContextType<unknown> | null>(null);

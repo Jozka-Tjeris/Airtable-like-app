@@ -1,10 +1,15 @@
 import { flexRender } from "@tanstack/react-table";
 import { useTableContext } from "./TableContext";
 import { useState, useCallback } from "react";
-import type { Row } from "./mockTableData";
+import type { TableRow } from "./mockTableData";
 
 export function TableHeader() {
-  const { table } = useTableContext<Row>();
+  const { 
+    table, 
+    handleAddColumn, 
+    handleDeleteColumn, 
+    handleRenameColumn 
+  } = useTableContext<TableRow>();
 
   // Columns currently sorted (for blue highlight)
   const sortedColumnIds = table.getState().sorting.map(s => s.id);
@@ -12,6 +17,9 @@ export function TableHeader() {
   // Single height for all header rows
   const [headerHeight, setHeaderHeight] = useState(40); // default 40px
 
+  // -----------------------------
+  // Vertical resize
+  // -----------------------------
   const startVerticalResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     const startY = e.clientY;
@@ -19,7 +27,7 @@ export function TableHeader() {
 
     const onMouseMove = (moveEvent: MouseEvent) => {
       const delta = moveEvent.clientY - startY;
-      setHeaderHeight(Math.max(32, startHeight + delta)); // min height 24px
+      setHeaderHeight(Math.max(32, startHeight + delta)); // min height 32px
     };
 
     const onMouseUp = () => {
@@ -31,21 +39,51 @@ export function TableHeader() {
     window.addEventListener("mouseup", onMouseUp);
   }, [headerHeight]);
 
+  // -----------------------------
+  // Column events
+  // -----------------------------
+  const handleHeaderDoubleClick = useCallback((columnId: string) => {
+    const newLabel = prompt("Enter new column name:");
+    if (newLabel && handleRenameColumn) handleRenameColumn(columnId, newLabel);
+  }, [handleRenameColumn]);
+
+  const handleHeaderRightClick = useCallback(
+    (e: React.MouseEvent, columnId: string, label: string) => {
+      e.preventDefault();
+
+      const confirmed = window.confirm(
+        `Delete column "${label}"?\n\nThis will remove all its cell values.`
+      );
+
+      if (confirmed) {
+        handleDeleteColumn(columnId);
+      }
+    },
+    [handleDeleteColumn]
+  );
+
+  // -----------------------------
+  // Render
+  // -----------------------------
   return (
     <thead className="border-b bg-gray-50">
       {table.getHeaderGroups().map(headerGroup => (
         <tr key={headerGroup.id} style={{ height: headerHeight }}>
           {headerGroup.headers.map(header => {
             const isActive = sortedColumnIds.includes(header.column.id);
+            const columnId = header.column.id;
 
             return (
               <th
-                key={header.id}
-                style={{ width: header.getSize(), tableLayout: 'fixed', height: headerHeight }}
-                className={`relative px-4 py-2 text-left font-semibold select-none
-                  ${isActive ? "bg-blue-100" : ""}`}
+                key={header.id} 
+                style={{ width: header.getSize(), tableLayout: "fixed", height: headerHeight }}
+                className={`relative px-4 py-2 text-left font-semibold select-none ${
+                  isActive ? "bg-blue-100" : ""
+                }`}
+                onDoubleClick={() => handleHeaderDoubleClick(columnId)}
+                onContextMenu={(e) => handleHeaderRightClick(e, columnId, String(header.column.columnDef.header))}
               >
-                {header.isPlaceholder ? null : (
+                {!header.isPlaceholder && (
                   <>
                     {/* Header text top-left */}
                     <div
@@ -68,12 +106,10 @@ export function TableHeader() {
                     {/* Filter button top-right */}
                     <button
                       className="absolute top-1 right-2 text-gray-400 hover:text-gray-700"
-                      onClick={() => console.log("Filter clicked for:", header.column.id)}
+                      onClick={() => console.log("Filter clicked for:", columnId)}
                     >
                       ⏺
                     </button>
-
-                    {/* --- RESIZE HANDLES --- */}
 
                     {/* Horizontal resize handle */}
                     {header.column.getCanResize() && (
@@ -94,6 +130,19 @@ export function TableHeader() {
               </th>
             );
           })}
+
+          {/* + Button for adding new column */}
+          <th
+            style={{ height: headerHeight, width: 50, minWidth: 50 }}
+            className="relative border-l bg-gray-50 flex items-center justify-center"
+          >
+            <button
+              onClick={handleAddColumn}
+              className="flex items-center justify-center w-6 h-6 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors shadow-sm"
+            >
+              +
+            </button>
+          </th>
         </tr>
       ))}
     </thead>

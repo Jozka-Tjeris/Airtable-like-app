@@ -19,7 +19,10 @@ import {
   type Row,
   type CellMap,
   type CellValue,
-  type CellKey
+  type CellKey,
+  type TableRow,
+  toCellKey,
+  fromCellKey
 } from "./mockTableData";
 
 // --------------------------------------------
@@ -30,11 +33,6 @@ type ActiveCell = {
   columnId: string;
 } | null;
 
-type TableRow = {
-  id: string;
-} & Record<string, CellValue>;
-
-
 export function BaseTable() {
   // --------------------------------------------
   // Core grid state (UI-owned, not TanStack-owned)
@@ -42,6 +40,39 @@ export function BaseTable() {
   const [rows] = useState<Row[]>(initialRows);
   const [columns, setColumns] = useState<Column[]>(initialColumns);
   const [cells, setCells] = useState<CellMap>(initialCells);
+
+  //Modifying columns
+  const handleAddColumn = useCallback(() => {
+    const newId = `col_${crypto.randomUUID()}`;
+    const newColumn: Column = {
+      id: newId,
+      label: "New Column",
+      width: 150,
+      type: "text" //default is text for now
+    };
+    
+    setColumns((prev) => [...prev, newColumn]);
+  }, []);
+
+  const handleDeleteColumn = useCallback((columnId: string) => {
+    setColumns(prev => prev.filter(col => col.id !== columnId));
+
+    // Also remove cells associated with that column
+    setCells(prev => {
+      const updated: CellMap = {};
+      Object.entries(prev).forEach(([key, value]: [string, CellValue]) => {
+        const { columnId: col } = fromCellKey(key as CellKey);
+        if (col !== columnId) updated[key as CellKey] = value;
+      });
+      return updated;
+    });
+  }, []);
+
+  const handleRenameColumn = useCallback((columnId: string, newLabel: string) => {
+    setColumns(prev =>
+      prev.map(col => (col.id === columnId ? { ...col, label: newLabel } : col))
+    );
+  }, []);
 
   // --------------------------------------------
   // Active cell + refs (for focus management)
@@ -92,7 +123,7 @@ export function BaseTable() {
   // --------------------------------------------
   const updateCell = useCallback(
     (rowId: string, columnId: string, value: CellValue) => {
-      const key = `${rowId}:${columnId}`;
+      const key = toCellKey({ rowId, columnId });
       setCells(prev => ({
         //Keep previous elements in to preserve structure
         ...prev,
@@ -101,6 +132,12 @@ export function BaseTable() {
       }));
     },
     []
+  );
+
+  //Row derivation, handles what rows are visible (for future use)
+  const visibleRows = useMemo(
+    () => [...rows].sort((a, b) => a.order - b.order),
+    [rows]
   );
 
   // --------------------------------------------
@@ -128,8 +165,8 @@ export function BaseTable() {
   // Derived table data for TanStack
   // --------------------------------------------
   const tableData = useMemo<TableRow[]>(() => {
-    return rows.map(row => {
-      const record: TableRow = { id: row.id };
+    return visibleRows.map((row, idx) => {
+      const record: TableRow = { id: row.id, order: idx};
 
       for (const col of columns) {
         record[col.id] = cells[`${row.id}:${col.id}`] ?? "";
@@ -137,7 +174,7 @@ export function BaseTable() {
 
       return record;
     });
-  }, [rows, columns, cells]);
+  }, [visibleRows, columns, cells]);
 
 
   // --------------------------------------------
@@ -196,7 +233,7 @@ export function BaseTable() {
   // Render
   // --------------------------------------------
   return (
-    <TableContext.Provider value={{ table } as TableContextType<unknown>}>
+    <TableContext.Provider value={{ table, handleAddColumn, handleDeleteColumn, handleRenameColumn } as TableContextType<unknown>}>
       <div ref={tableContainerRef} className="w-full overflow-x-auto border">
         <div className="max-h-[calc(100vh-136px)] overflow-y-auto">
           <table className="border-collapse table-auto w-max">

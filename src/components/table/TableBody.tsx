@@ -1,9 +1,9 @@
 import { flexRender } from "@tanstack/react-table";
 import { useTableContext } from "./TableContext";
-import type { Row } from "./mockTableData";
+import type { TableRow } from "./mockTableData";
 
 export function TableBody() {
-  const { table } = useTableContext<Row>();
+  const { table } = useTableContext<TableRow>();
 
   return (
     <tbody>

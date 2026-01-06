@@ -18,17 +18,48 @@ export const columns: Column[] = [
 // ===== Row =====
 export type Row = {
   id: string;
+  order: number;
 };
 
+export type TableRow = {
+  id: string;
+  order: number;
+} & Record<string, CellValue>;
+
 // ===== Mock Rows =====
-export const rows: Row[] = Array.from({ length: 25 }, (_, i) => ({
+export const rows: TableRow[] = Array.from({ length: 25 }, (_, i) => ({
   id: `row-${i}`,
+  order: i
 }));
 
 // ===== Cell =====
 export type CellValue = string | number;
 export type CellKey = `${string}:${string}`;
 export type CellMap = Record<CellKey, CellValue>;
+
+export type CellAddress = {
+  rowId: string;
+  columnId: string;
+};
+
+// -----------------------------
+// Cell address utilities
+// -----------------------------
+
+export function toCellKey(address: CellAddress): CellKey {
+  return `${address.rowId}:${address.columnId}`;
+}
+
+export function fromCellKey(key: CellKey): CellAddress {
+  const parts = key.split(":");
+
+  if (parts.length !== 2) {
+    throw new Error(`Invalid CellKey format: ${key}`);
+  }
+  // Runtime guard ensures tuple safety
+  const [rowId, columnId] = parts as [string, string];
+  return { rowId, columnId };
+}
 
 // ===== Mock Cells =====
 export const cells: CellMap = Object.fromEntries(
