@@ -8,6 +8,8 @@ export type TableContextType<TData> = {
   handleAddColumn: () => void;
   handleDeleteColumn: (columnId: string) => void;
   handleRenameColumn: (columnId: string, newLabel: string) => void;
+  handleAddRow: () => void;
+  handleDeleteRow: (rowId: string) => void;
 };
 
 export const TableContext = createContext<TableContextType<unknown> | null>(null);

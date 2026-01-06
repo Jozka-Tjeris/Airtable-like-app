@@ -37,7 +37,7 @@ export function BaseTable() {
   // --------------------------------------------
   // Core grid state (UI-owned, not TanStack-owned)
   // --------------------------------------------
-  const [rows] = useState<Row[]>(initialRows);
+  const [rows, setRows] = useState<Row[]>(initialRows);
   const [columns, setColumns] = useState<Column[]>(initialColumns);
   const [cells, setCells] = useState<CellMap>(initialCells);
 
@@ -72,6 +72,41 @@ export function BaseTable() {
     setColumns(prev =>
       prev.map(col => (col.id === columnId ? { ...col, label: newLabel } : col))
     );
+  }, []);
+
+  //Modifying Rows
+  const handleAddRow = useCallback(() => {
+    const newId = `row-${crypto.randomUUID()}`;
+    const newRow: TableRow = {
+      id: newId,
+      order: table.getRowCount()
+    };
+    console.log(newRow);
+    
+    setRows(prev => [...prev, newRow]);
+    //Initialize cells for this row
+    setCells(prev => {
+      const newCells = { ...prev };
+      columns.forEach(col => {
+        const key = `${newId}:${col.id}`;
+        newCells[key as CellKey] = ""; // default empty
+      });
+      return newCells;
+    });
+  }, []);
+
+  const handleDeleteRow = useCallback((rowId: string) => {
+    setRows(prev => prev.filter(row => row.id !== rowId));
+
+    // Also remove cells associated with that column
+    setCells(prev => {
+      const updated: CellMap = {};
+      Object.entries(prev).forEach(([key, value]: [string, CellValue]) => {
+        const { rowId: row } = fromCellKey(key as CellKey);
+        if (row !== rowId) updated[key as CellKey] = value;
+      });
+      return updated;
+    });
   }, []);
 
   // --------------------------------------------
@@ -233,7 +268,7 @@ export function BaseTable() {
   // Render
   // --------------------------------------------
   return (
-    <TableContext.Provider value={{ table, handleAddColumn, handleDeleteColumn, handleRenameColumn } as TableContextType<unknown>}>
+    <TableContext.Provider value={{ table, handleAddColumn, handleDeleteColumn, handleRenameColumn, handleAddRow, handleDeleteRow } as TableContextType<unknown>}>
       <div ref={tableContainerRef} className="w-full overflow-x-auto border">
         <div className="max-h-[calc(100vh-136px)] overflow-y-auto">
           <table className="border-collapse table-auto w-max">
