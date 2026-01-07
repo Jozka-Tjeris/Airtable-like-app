@@ -111,7 +111,9 @@ export function TableHeader() {
                       {/* Filter button top-right */}
                       <button
                         className="absolute top-1 right-2 text-gray-400 hover:text-gray-700"
-                        onClick={() => {
+                        onContextMenu={(e) => {e.stopPropagation(); }}
+                        onClick={(e) => {
+                          e.stopPropagation(); //Prevent rename trigger
                           // Check if this column is already filtered
                           const existingFilter = table.getState().columnFilters.find(f => f.id === columnId);
 
