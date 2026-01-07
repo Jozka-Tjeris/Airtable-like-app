@@ -1,10 +1,14 @@
-type GridViewBarProps = {
-  globalSearch: string;
-  setGlobalSearch: (value: string) => void;
-};
+"use client"
 
-export function GridViewBar({ globalSearch, setGlobalSearch }: GridViewBarProps){
-    return <div className="h-12 border-b border-gray-750 bg-gray-50">
+import { useTableController } from "~/components/table/controller/TableProvider";
+
+export function GridViewBar(){
+    const {
+        globalSearch,
+        setGlobalSearch
+    } = useTableController();
+    
+    return <div className="shrink-0 h-12 border-b border-gray-750 bg-gray-50">
         <div className="flex items-center justify-between px-3 py-2 border-b bg-white">
             <div className="flex items-center gap-2">
                 {/* Filters / Sort buttons later */}

@@ -1,0 +1,42 @@
+export type CellValue = string | number;
+
+export type CellKey = string;
+
+export type ColumnType = "text" | "number";
+
+export type Column = {
+  id: string;
+  label: string;
+  type: ColumnType;
+  width?: number;
+};
+
+export type Row = {
+  id: string;
+  order: number;
+};
+
+export type TableRow = Row;
+
+export type CellMap = Record<CellKey, CellValue>;
+
+export type CellAddress = {
+  rowId: string;
+  columnId: string;
+};
+
+// Helpers
+export function toCellKey(address: CellAddress): CellKey {
+  return `${address.rowId}:${address.columnId}`;
+}
+
+export function fromCellKey(key: CellKey): CellAddress {
+  const parts = key.split(":");
+
+  if (parts.length !== 2) {
+    throw new Error(`Invalid CellKey format: ${key}`);
+  }
+  // Runtime guard ensures tuple safety
+  const [rowId, columnId] = parts as [string, string];
+  return { rowId, columnId };
+}

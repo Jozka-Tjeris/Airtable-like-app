@@ -1,15 +1,14 @@
 import { useEffect, useState, useRef, memo } from "react";
-import { type CellValue } from "./mockTableData";
+import { type CellValue } from "./controller/tableTypes";
+import { useMoveActiveCell } from "./controller/tableNavigation";
+import { useTableController } from "./controller/TableProvider";
 
 type TableCellProps = {
   value: CellValue;
   onChange: (newValue: CellValue) => void;
   onClick: () => void; // notify parent that this cell is active
-  isActive?: boolean;
-  onMoveNext?: () => void; // Tab / ArrowRight
-  onMovePrev?: () => void; // Shift+Tab / ArrowLeft
-  onMoveUp?: () => void;   // ArrowUp
-  onMoveDown?: () => void; // ArrowDown
+  columnId: string;
+  rowId: string;
   cellId: string;
   registerRef?: (id: string, el: HTMLDivElement | null) => void;
 };
@@ -18,23 +17,25 @@ export const TableCell = memo(function TableCell({
   value,
   onChange,
   onClick,
-  isActive = false,
-  onMoveNext,
-  onMovePrev,
-  onMoveUp,
-  onMoveDown,
+  rowId,
+  columnId,
   cellId,
   registerRef
 }: TableCellProps) {
+  const { activeCell } = useTableController();
   const [isEditing, setIsEditing] = useState(false);
   const [localValue, setLocalValue] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
   const divRef = useRef<HTMLDivElement>(null);
 
+  const isActive = activeCell?.rowId === rowId && activeCell?.columnId === columnId;
+  
   // Sync local state if external value changes (e.g., undo/redo or formulas)
   useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
+    if (!isEditing){
+      setLocalValue(value);
+    }
+  }, [value, isEditing]);
 
   // Register ref for navigation
   useEffect(() => {
@@ -44,12 +45,14 @@ export const TableCell = memo(function TableCell({
 
   // Restore focus after editing
   useEffect(() => {
-    // If we just stopped editing and this cell is the active one,
-    // return focus to the div so keyboard navigation continues working.
-    if (!isEditing && isActive) {
+    // CRITICAL: If we are editing, do NOT touch the focus.
+    // The input's autoFocus attribute will handle it.
+    if (isEditing) return;
+
+    if (isActive) {
       divRef.current?.focus();
     }
-  }, [isEditing, isActive]);
+  }, [isActive, isEditing]);
 
   const commit = () => {
     if (!isEditing) return;
@@ -61,6 +64,8 @@ export const TableCell = memo(function TableCell({
     setLocalValue(value);
     setIsEditing(false);
   };
+
+  const moveActiveCell = useMoveActiveCell();
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement | HTMLInputElement>) => {
     if (isEditing) {
@@ -76,8 +81,8 @@ export const TableCell = memo(function TableCell({
       else if (e.key === "Tab") {
         e.preventDefault();
         commit();
-        if (e.shiftKey) onMovePrev?.();
-        else onMoveNext?.();
+        if (e.shiftKey) moveActiveCell("left");
+        else moveActiveCell("right");
       }
     } else if (isActive) {
       // Prevent default scrolling for navigation keys
@@ -88,16 +93,16 @@ export const TableCell = memo(function TableCell({
         case "Tab":
           //don't blur self here as this loses focus on table
           cancel();
-          if (e.shiftKey) onMovePrev?.();
-          else onMoveNext?.();
+          if (e.shiftKey) moveActiveCell("left");
+          else moveActiveCell("right");
           break;
         case "Enter":
           setIsEditing(true);
           break;
-        case "ArrowRight": onMoveNext?.(); break;
-        case "ArrowLeft":  onMovePrev?.(); break;
-        case "ArrowUp":    onMoveUp?.();   break;
-        case "ArrowDown":  onMoveDown?.(); break;
+        case "ArrowRight": moveActiveCell("right"); break;
+        case "ArrowLeft":  moveActiveCell("left"); break;
+        case "ArrowUp":    moveActiveCell("up"); break;
+        case "ArrowDown":  moveActiveCell("down"); break;
       }
     }
   };
@@ -113,16 +118,25 @@ export const TableCell = memo(function TableCell({
         style={{ minWidth: 0 }}
         value={localValue}
         onChange={e => setLocalValue(e.target.value)}
-        onBlur={commit}
+        // onBlur={commit}
         onKeyDown={handleKeyDown}
         autoFocus
       />
     );
   }
 
-  const handleClick = () => {
-    if (!isActive) onClick(); // select if not active
-    else setIsEditing(true);   // enter edit if already active
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // CRITICAL: Stop the event from reaching BaseTable's handleClickOutside
+    e.stopPropagation(); 
+
+    if (!isActive) {
+      onClick();
+    } else {
+      // If already active, the second click enters edit mode immediately
+      setTimeout(() => {
+        setIsEditing(true);
+      }, 0);
+    }
   };
 
   // -----------------------------
@@ -140,7 +154,7 @@ export const TableCell = memo(function TableCell({
           ? "border border-blue-500 shadow-[0_0_0_2px_rgba(60,120,255,1)] z-10 relative rounded-[1px]"
           : "border border-transparent"}
       `}
-      onClick={handleClick}
+      onMouseDown={handleMouseDown}
       onKeyDown={handleKeyDown}
     >
       {/* Adding transparent span prevents cell from collapsing in size */}
@@ -149,9 +163,5 @@ export const TableCell = memo(function TableCell({
       )}
     </div>
   );
-}, (prev, next) =>
-  //Only re-render if these specific things change
-  prev.value === next.value &&
-  prev.isActive === next.isActive &&
-  prev.cellId === next.cellId
+}
 );

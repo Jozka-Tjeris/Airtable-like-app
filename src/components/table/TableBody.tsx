@@ -1,20 +1,29 @@
+import React, { useCallback } from "react";
 import { flexRender } from "@tanstack/react-table";
-import { useTableContext } from "./TableContext";
-import type { TableRow } from "./mockTableData";
-import { useCallback } from "react";
+import { useTableController } from "@/components/table/controller/TableProvider";
+import type { TableRow } from "./controller/tableTypes";
 
+/**
+ * Notice: We've removed registerRef and activeCell from props 
+ * as they are now managed via the table instance or Context.
+ */
 export function TableBody() {
-  const { table, handleAddRow, handleDeleteRow } = useTableContext<TableRow>();
-  const rows = table.getRowModel().rows;
-  const headerGroups = table.getHeaderGroups();
-  const hasColumns = headerGroups.some(group => group.headers.length > 0);
+  const { 
+    table, 
+    rows, 
+    columns, 
+    handleAddRow, 
+    handleDeleteRow 
+  } = useTableController();
 
   const handleRowRightClick = useCallback(
     (e: React.MouseEvent, rowId: string, rowOrder: number) => {
       e.preventDefault();
+      // Use e.stopPropagation to prevent triggering any cell selection logic
+      e.stopPropagation();
 
       const confirmed = window.confirm(
-        `Delete row "${rowOrder+1}"?\n\nThis will remove all its cell values.`
+        `Delete row "${rowOrder + 1}"?\n\nThis will remove all its cell values.`
       );
 
       if (confirmed) {
@@ -24,60 +33,67 @@ export function TableBody() {
     [handleDeleteRow]
   );
 
+  // -----------------------------
+  // Empty State logic
+  // -----------------------------
   if (rows.length === 0) {
     return (
       <tbody>
         <tr>
-          <td colSpan={table.getAllColumns().length || 1} className="px-4 py-2 text-center text-gray-500">
+          <td colSpan={columns.length || 1} className="px-4 py-2 text-center text-gray-500">
             No rows to display
           </td>
         </tr>
-        {hasColumns ? (
-            //Add row button
-            <tr className="bg-gray-50">
-              <td colSpan={table.getAllColumns().length || 1} className="px-4 py-2 text-center">
-                <button
-                  onClick={() => {
-                    // handleAddRow comes from BaseTable
-                    handleAddRow?.();
-                  }}
-                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
-                >
-                  + Add Row
-                </button>
-              </td>
-            </tr>
-          ) : (
-            <></>
-          )
-        }
+        {columns.length > 0 && (
+          <tr className="bg-gray-50">
+            <td colSpan={columns.length || 1} className="px-4 py-2 text-center">
+              <button
+                onClick={() => handleAddRow(rows.length)}
+                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
+              >
+                + Add Row
+              </button>
+            </td>
+          </tr>
+        )}
       </tbody>
     );
   }
 
+  // -----------------------------
+  // Render TanStack Row Model
+  // -----------------------------
   return (
     <tbody>
-      {table.getRowModel().rows.map(row => (
-        <tr key={row.id} className="border-b last:border-0 hover:bg-[#f0f0f0]"
-          onContextMenu={(e) => handleRowRightClick(e, row.original.id, row.original.order)}>
-          {row.getVisibleCells().map(cell => (
-            <td key={cell.id} className="border-r p-0 align-top">
-              {flexRender(
-                cell.column.columnDef.cell,
-                cell.getContext()
-              )}
+      {table.getRowModel().rows.map((row) => (
+        <tr
+          key={row.id}
+          className="border-b last:border-0 hover:bg-[#f0f0f0]"
+          onContextMenu={(e) => {const rowOriginal = row.original as TableRow;
+            e.preventDefault();
+            e.stopPropagation();
+            handleRowRightClick(e, rowOriginal.id, rowOriginal.order)}}
+        >
+          {row.getVisibleCells().map((cell) => (
+            <td 
+              key={cell.id} 
+              className="border-r p-0 align-top"
+              style={{ width: cell.column.getSize() }}
+            >
+              {/* This is where the magic happens. flexRender calls the 
+                  cell renderer defined in your TableProvider.
+              */}
+              {flexRender(cell.column.columnDef.cell, cell.getContext())}
             </td>
           ))}
         </tr>
       ))}
-      {/* Add Row Button */}
+
+      {/* Footer Add Row button */}
       <tr className="bg-gray-50">
-        <td colSpan={table.getAllColumns().length || 1} className="px-4 py-2 text-center">
+        <td colSpan={columns.length || 1} className="px-4 py-2 text-center">
           <button
-            onClick={() => {
-              // handleAddRow comes from BaseTable
-              handleAddRow?.();
-            }}
+            onClick={() => handleAddRow(rows.length)}
             className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
           >
             + Add Row
