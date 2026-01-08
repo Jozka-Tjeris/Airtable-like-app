@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { type CellValue, type CellKey } from "~/components/table/controller/tableTypes";
+import { type CellValue } from "~/components/table/controller/tableTypes";
 import { TRPCError } from "@trpc/server";
 
 // Utility to convert cell array to key-value map
@@ -8,7 +8,7 @@ function normalizeCells(cells: { rowId: string; columnId: string; value: CellVal
   const map: Record<string, CellValue | null> = {};
   for (const cell of cells) {
     const key = `${cell.rowId}:${cell.columnId}`;
-    map[key as CellKey] = cell.value;
+    map[key] = cell.value;
   }
   return map;
 }

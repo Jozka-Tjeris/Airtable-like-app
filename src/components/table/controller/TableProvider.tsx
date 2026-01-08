@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useCallback, useMemo, type 
 import { useReactTable, getCoreRowModel, getFilteredRowModel, getSortedRowModel, type ColumnDef,
   type SortingState, type ColumnFiltersState, type VisibilityState, type ColumnSizingState,
  } from "@tanstack/react-table";
-import type { Column, Row, CellMap, CellValue, TableRow, ColumnType, CellKey } from "./tableTypes";
+import type { Column, Row, CellMap, CellValue, TableRow, ColumnType } from "./tableTypes";
 import { TableCell } from "../TableCell";
 import { api as trpc } from "~/trpc/react";
 
@@ -202,7 +202,7 @@ export function TableProvider({ children, initialRows, initialColumns, initialCe
 
     //Delay flush to avoid Foreign Key violation issues
     scheduleLongFlush();
-  }, [deleteRowMutation]);
+  }, [deleteRowMutation, scheduleLongFlush]);
 
   const handleAddRow = useCallback((orderNum: number, tableId: string) => {
     const newId = `row-${crypto.randomUUID()}`;
@@ -219,7 +219,7 @@ export function TableProvider({ children, initialRows, initialColumns, initialCe
 
     //Delay flush to avoid Foreign Key violation issues
     scheduleLongFlush();
-  }, [columns, addRowMutation]);
+  }, [columns, addRowMutation, scheduleLongFlush]);
 
   // -----------------------
   // Column operations
@@ -241,7 +241,7 @@ export function TableProvider({ children, initialRows, initialColumns, initialCe
 
     //Delay flush to avoid Foreign Key violation issues
     scheduleLongFlush();
-  }, [columns, rows, addColumnMutation]);
+  }, [rows, addColumnMutation, scheduleLongFlush]);
 
   const handleDeleteColumn = useCallback((columnId: string) => {
     setColumns(prev => prev.filter(c => c.id !== columnId));
@@ -257,7 +257,7 @@ export function TableProvider({ children, initialRows, initialColumns, initialCe
 
     //Delay flush to avoid Foreign Key violation issues
     scheduleLongFlush();
-  }, [deleteColumnMutation]);
+  }, [deleteColumnMutation, scheduleLongFlush]);
 
   const handleRenameColumn = useCallback((columnId: string, newLabel: string) => {
     setColumns(prev => prev.map(c => c.id === columnId ? { ...c, label: newLabel } : c));
