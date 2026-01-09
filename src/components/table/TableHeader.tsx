@@ -35,13 +35,13 @@ export function TableHeader() {
   // -----------------------------
   const handleHeaderDoubleClick = useCallback((columnId: string) => {
     const newLabel = prompt("Enter new column name:");
-    if (newLabel) handleRenameColumn(columnId, newLabel);
+    if (newLabel) handleRenameColumn(columnId, newLabel, TEST_TABLE_ID);
   }, [handleRenameColumn]);
 
   const handleHeaderRightClick = useCallback((e: React.MouseEvent, columnId: string, label: string) => {
     e.preventDefault();
     if (window.confirm(`Delete column "${label}"?\n\nThis will remove all its cell values.`)) {
-      handleDeleteColumn(columnId);
+      handleDeleteColumn(columnId, TEST_TABLE_ID);
     }
   }, [handleDeleteColumn]);
 

@@ -23,10 +23,10 @@ export type TableProviderState = {
   updateCell: (rowId: string, columnId: string, value: CellValue) => void;
 
   handleAddRow: (orderNum: number, tableId: string) => void;
-  handleDeleteRow: (rowId: string) => void;
+  handleDeleteRow: (rowId: string, tableId: string) => void;
   handleAddColumn: (orderNum: number, tableId: string, label: string, type: ColumnType) => void;
-  handleDeleteColumn: (columnId: string) => void;
-  handleRenameColumn: (columnId: string, newLabel: string) => void;
+  handleDeleteColumn: (columnId: string, tableId: string) => void;
+  handleRenameColumn: (columnId: string, newLabel: string, tableId: string) => void;
 
   sorting: SortingState;
   columnFilters: ColumnFiltersState;
@@ -66,6 +66,15 @@ export function TableProvider({ children, initialRows, initialColumns, initialCe
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
   const [headerHeight, setHeaderHeight] = useState(40);
+  const structureMutationInFlightRef = useRef(0);
+
+  const beginStructureMutation = () => {
+    structureMutationInFlightRef.current += 1;
+  };
+
+  const endStructureMutation = () => {
+    structureMutationInFlightRef.current -= 1;
+  };
 
   // -----------------------
   // tRPC mutations
@@ -78,7 +87,7 @@ export function TableProvider({ children, initialRows, initialColumns, initialCe
   });
 
   const addRowMutation = trpc.table.addRow.useMutation({
-    onSuccess: ({ row, cells, optimisticId }) => {
+    onSuccess: ({ row, optimisticId }) => {
       // 1. Replace row ID
       setRows(prev =>
         prev.map(r => r.id === optimisticId ? {...row, optimistic: false } : r)
@@ -169,11 +178,15 @@ export function TableProvider({ children, initialRows, initialColumns, initialCe
 
   // Default debounce duration (ms)
   const DEFAULT_BATCH_DELAY = 500;
-  const LONG_DELAY_AFTER_ROW_COL_OP = 3000;
 
   // Flush pending updates to the server
   const flushCellUpdates = useCallback(() => {
     if (pendingCellUpdatesRef.current.length === 0) return;
+
+    //Do NOT flush if structure mutation is active
+    if (structureMutationInFlightRef.current > 0) {
+      return;
+    }
 
     // Capture pending updates
     const updatesToSend = [...pendingCellUpdatesRef.current];
@@ -214,13 +227,6 @@ export function TableProvider({ children, initialRows, initialColumns, initialCe
     [columns, flushCellUpdates]
   );
 
-  // Helper to delay flush after row/column ops
-  const scheduleLongFlush = useCallback(() => {
-    console.log("LONG SCHEDULE INIT");
-    if (batchTimerRef.current) clearTimeout(batchTimerRef.current);
-    batchTimerRef.current = setTimeout(flushCellUpdates, LONG_DELAY_AFTER_ROW_COL_OP);
-  }, [flushCellUpdates]);
-
   // Flush remaining updates on unmount
   useEffect(() => {
     return () => {
@@ -233,7 +239,9 @@ export function TableProvider({ children, initialRows, initialColumns, initialCe
   // -----------------------
   // Row operations
   // -----------------------
-  const handleDeleteRow = useCallback((rowId: string) => {
+  const handleDeleteRow = useCallback((rowId: string, tableId: string) => {
+    beginStructureMutation();
+
     setRows(prev => prev.filter(r => r.id !== rowId));
     setCells(prev => {
       const updated: CellMap = {};
@@ -243,15 +251,23 @@ export function TableProvider({ children, initialRows, initialColumns, initialCe
       });
       return updated;
     });
-    deleteRowMutation.mutate({ rowId });
-
-    //Delay flush to avoid Foreign Key violation issues
-    scheduleLongFlush();
-  }, [deleteRowMutation, scheduleLongFlush]);
+    deleteRowMutation.mutate(
+      { tableId, rowId },
+      {
+        onSettled: () => {
+          endStructureMutation();
+          flushCellUpdates();
+        }
+      }
+    );
+  }, [deleteRowMutation, endStructureMutation, flushCellUpdates]);
 
   const handleAddRow = useCallback((orderNum: number, tableId: string) => {
+    beginStructureMutation();
+
     const optimisticId = `optimistic-row-${crypto.randomUUID()}`;
     const newRow: TableRow = { id: optimisticId, order: orderNum, optimistic: true };
+
     setRows(prev => [...prev, newRow]);
     setCells(prev => {
       const newCells = { ...prev };
@@ -260,16 +276,23 @@ export function TableProvider({ children, initialRows, initialColumns, initialCe
       });
       return newCells;
     });
-    addRowMutation.mutate({ tableId: tableId, orderNum: orderNum, optimisticId: optimisticId });
-
-    //Delay flush to avoid Foreign Key violation issues
-    scheduleLongFlush();
-  }, [columns, addRowMutation, scheduleLongFlush]);
+    addRowMutation.mutate(
+      { tableId, orderNum, optimisticId },
+      {
+        onSettled: () => {
+          endStructureMutation();
+          flushCellUpdates();
+        }
+      }
+    );
+  }, [columns, addRowMutation, endStructureMutation, flushCellUpdates]);
 
   // -----------------------
   // Column operations
   // -----------------------
   const handleAddColumn = useCallback((orderNum: number, tableId: string, label: string, type: ColumnType) => {
+    beginStructureMutation();
+
     const optimisticId = `optimistic-col-${crypto.randomUUID()}`;
     const newCol: Column = { id: optimisticId, label: label, order: orderNum, type: type, optimistic: true };
     setColumns(prev => [...prev, newCol]);
@@ -282,13 +305,20 @@ export function TableProvider({ children, initialRows, initialColumns, initialCe
       });
       return newCells;
     });
-    addColumnMutation.mutate({ tableId: tableId, label: label, orderNum: orderNum, type: type, optimisticId: optimisticId });
+    addColumnMutation.mutate(
+      { tableId, label, orderNum, type, optimisticId },
+      {
+        onSettled: () => {
+          endStructureMutation();
+          flushCellUpdates();
+        }
+      }
+    );
+  }, [rows, addColumnMutation, endStructureMutation, flushCellUpdates]);
 
-    //Delay flush to avoid Foreign Key violation issues
-    scheduleLongFlush();
-  }, [rows, addColumnMutation, scheduleLongFlush]);
+  const handleDeleteColumn = useCallback((columnId: string, tableId: string) => {
+    beginStructureMutation();
 
-  const handleDeleteColumn = useCallback((columnId: string) => {
     setColumns(prev => prev.filter(c => c.id !== columnId));
     setCells(prev => {
       const updated: CellMap = {};
@@ -298,15 +328,21 @@ export function TableProvider({ children, initialRows, initialColumns, initialCe
       });
       return updated;
     });
-    deleteColumnMutation.mutate({ columnId });
+    deleteColumnMutation.mutate(
+      { tableId, columnId },
+      {
+        onSettled: () => {
+          endStructureMutation();
+          flushCellUpdates();
+        }
+      }
+    );
 
-    //Delay flush to avoid Foreign Key violation issues
-    scheduleLongFlush();
-  }, [deleteColumnMutation, scheduleLongFlush]);
+  }, [deleteColumnMutation, endStructureMutation, flushCellUpdates]);
 
-  const handleRenameColumn = useCallback((columnId: string, newLabel: string) => {
+  const handleRenameColumn = useCallback((columnId: string, newLabel: string, tableId: string) => {
     setColumns(prev => prev.map(c => c.id === columnId ? { ...c, label: newLabel } : c));
-    renameColumnMutation.mutate({ columnId, newLabel });
+    renameColumnMutation.mutate({ tableId, columnId, newLabel });
   }, [renameColumnMutation]);
 
   // Focus active cell

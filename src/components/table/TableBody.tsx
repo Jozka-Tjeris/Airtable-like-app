@@ -27,7 +27,7 @@ export function TableBody() {
       );
 
       if (confirmed) {
-        handleDeleteRow(rowId);
+        handleDeleteRow(rowId, TEST_TABLE_ID);
       }
     },
     [handleDeleteRow]
