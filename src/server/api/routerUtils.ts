@@ -1,6 +1,9 @@
 import { type CellValue } from "~/components/table/controller/tableTypes";
 import type { Prisma } from "~/generated/client";
 import { TRPCError } from "@trpc/server";
+import type { createTRPCContext } from "~/server/api/trpc";
+
+export type Context = Awaited<ReturnType<typeof createTRPCContext>>;
 
 // Utility to convert cell array to key-value map
 export function normalizeCells(cells: { rowId: string; columnId: string; value: CellValue | null }[]) {
@@ -27,9 +30,12 @@ export async function withTableLock<T>(
 }
 
 export async function assertTableAccess(
-  ctx: any,
+  ctx: Context,
   tableId: string
 ) {
+  if (!ctx.session?.user) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
   const table = await ctx.db.table.findFirst({
     where: {
       id: tableId,

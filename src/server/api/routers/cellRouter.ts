@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
-import { assertTableAccess } from "../routerUtils";
 
 export const cellRouter = createTRPCRouter({
   updateCell: protectedProcedure
