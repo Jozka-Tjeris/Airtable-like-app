@@ -31,11 +31,11 @@ export function TableHeader() {
   const onAddColumnClick = useCallback(() => {
     const name = prompt("Enter column name:", `Column ${columns.length + 1}`);
     if (!name) return;
-    let typeInput = prompt("Enter column type (text, number) [default is text]:", "text");
+    const typeInput = prompt("Enter column type (text, number) [default is text]:", "text");
     if (typeInput === null) return;
     const type: ColumnType = typeInput.toLowerCase().trim() === "number" ? "number" : "text";
     handleAddColumn(columns.length + 1, TEST_TABLE_ID, name, type);
-  }, []);
+  }, [columns.length, handleAddColumn]);
 
   const hasColumns = headerGroups.some(group => group.headers.length > 0);
 
@@ -51,9 +51,8 @@ export function TableHeader() {
               
               // Correctly typed metadata extraction
               const meta = header.column.columnDef.meta as { columnType?: ColumnType };
-              const type = meta?.columnType || "text";
+              const type = meta?.columnType ?? "text";
               const config = COLUMN_CONFIG[type];
-              const isNumber = type === "number";
 
               return (
                 <th

@@ -24,14 +24,12 @@ export const TableCell = memo(function TableCell({
   cellId,
   registerRef
 }: TableCellProps) {
-  const { activeCell } = useTableController();
+  const { activeCell, getIsStructureStable } = useTableController();
   const [isEditing, setIsEditing] = useState(false);
   const [localValue, setLocalValue] = useState(value ?? "");
   
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const isNumber = columnType === "number";
 
   // --- REFS FOR RELIABLE COMMITTING ---
   const localValueRef = useRef(localValue);
@@ -124,6 +122,10 @@ export const TableCell = memo(function TableCell({
   const moveActiveCell = useMoveActiveCell();
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement | HTMLInputElement>) => {
+    if (!getIsStructureStable()) {
+      e.preventDefault();
+      return; // ignore edits / navigation during structure mutations
+    }
     if (isEditing) {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -160,7 +162,7 @@ export const TableCell = memo(function TableCell({
     }
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleMouseDown = () => {
     if (isEditing) return; // Let input handle its own clicks
     if (!isActive) {
       onClick(); // Set active in Provider
@@ -217,6 +219,7 @@ export const TableCell = memo(function TableCell({
         <input
           ref={inputRef}
           value={localValue}
+          disabled={!getIsStructureStable()}
           onChange={e => {
             const val = e.target.value;
             if (columnType === "number") {

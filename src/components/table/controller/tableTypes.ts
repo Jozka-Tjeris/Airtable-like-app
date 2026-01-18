@@ -34,7 +34,9 @@ export type Row = {
   internalId?: string;
 };
 
-export type TableRow = Row;
+export type TableRow = Row & {
+  cells: Record<string, CellValue>;
+};
 
 export type CellMap = Record<CellKey, CellValue>;
 
