@@ -1,7 +1,6 @@
 import React, { useCallback } from "react";
 import { flexRender } from "@tanstack/react-table";
 import { TEST_TABLE_ID, useTableController } from "@/components/table/controller/TableProvider";
-import type { TableRow } from "./controller/tableTypes";
 
 /**
  * Notice: We've removed registerRef and activeCell from props 
@@ -69,7 +68,7 @@ export function TableBody() {
         <tr
           key={row.id}
           className="border-b last:border-0 hover:bg-[#f0f0f0] h-10"
-          onContextMenu={(e) => {const rowOriginal = row.original as TableRow;
+          onContextMenu={(e) => {const rowOriginal = row.original;
             e.preventDefault();
             e.stopPropagation();
             handleRowRightClick(e, rowOriginal.id, rowOriginal.order)}}

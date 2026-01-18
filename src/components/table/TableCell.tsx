@@ -119,14 +119,19 @@ export const TableCell = memo(function TableCell({
         case "Tab":
           e.preventDefault();
           commit();
-          e.shiftKey ? moveActiveCell("left") : moveActiveCell("right");
+          if(e.shiftKey) moveActiveCell("left")
+          else moveActiveCell("right");
           break;
       }
     } else if (isActive) {
       if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Tab"].includes(e.key)) e.preventDefault();
       switch (e.key) {
         case "Enter": setIsEditing(true); break;
-        case "Tab": cancel(); e.shiftKey ? moveActiveCell("left") : moveActiveCell("right"); break;
+        case "Tab": 
+          cancel(); 
+          if(e.shiftKey) moveActiveCell("left")
+          else moveActiveCell("right"); 
+          break;
         case "ArrowRight": moveActiveCell("right"); break;
         case "ArrowLeft": moveActiveCell("left"); break;
         case "ArrowUp": moveActiveCell("up"); break;

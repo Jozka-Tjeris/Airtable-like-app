@@ -9,7 +9,8 @@ export const columns: Column[] = [
 
 export const rows: TableRow[] = Array.from({ length: 3 }, (_, i) => ({
   id: `row-${i}`,
-  order: i
+  order: i,
+  cells: {}
 }));
 
 export const cells: CellMap = Object.fromEntries(
