@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { LeftBar } from "./LeftBar";
 import { TopBar } from "./TopBar";
 import { TableSelectionBar } from "./TableSelectionBar";
@@ -123,9 +122,9 @@ export function BasePageShell({ baseId }: BasePageShellProps) {
       );
     },
 
-    onSettled: () => {
+    onSettled: async () => {
       setCreatingTable(false);
-      utils.table.listTablesByBaseId.invalidate({ baseId });
+      await utils.table.listTablesByBaseId.invalidate({ baseId });
     },
   });
 
@@ -155,8 +154,8 @@ export function BasePageShell({ baseId }: BasePageShellProps) {
         utils.table.listTablesByBaseId.setData({ baseId }, context.previousTables);
       }
     },
-    onSettled: () => {
-      utils.table.listTablesByBaseId.invalidate({ baseId });
+    onSettled: async () => {
+      await utils.table.listTablesByBaseId.invalidate({ baseId });
     },
   });
 
@@ -212,7 +211,7 @@ export function BasePageShell({ baseId }: BasePageShellProps) {
           <TopBar />
 
           <TableSelectionBar
-            tables={tablesQuery.data || []}
+            tables={tablesQuery.data ?? []}
             activeTableId={activeTableId}
             onTableSelect={setActiveTableId}
             onCreateTable={handleCreateTable}

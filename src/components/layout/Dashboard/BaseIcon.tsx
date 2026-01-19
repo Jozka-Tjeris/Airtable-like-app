@@ -15,7 +15,7 @@ export function BaseIcon({
       tabIndex={tabIndex}
     >
       <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-[#0d7f78] text-white">
-        <span>{name[0] || "U"}</span>
+        <span>{name[0] ?? "U"}</span>
       </div>
 
       <div className="flex flex-col ml-2 justify-center">

@@ -10,8 +10,8 @@ export function Sidebar() {
     const [creating, setCreating] = useState(false);
 
     const createBaseMutation = trpc.base.createBase.useMutation({
-        onSuccess: (newBase) => {
-        utils.base.listBases.invalidate(); // Refresh the base list
+        onSuccess: async (newBase) => {
+        await utils.base.listBases.invalidate(); // Refresh the base list
         router.push(`/base/${newBase.id}`); // Redirect to the new base
         },
         onError: (err) => {
