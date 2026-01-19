@@ -1,6 +1,6 @@
 import { TopBar } from "./TopBar";
 import { Sidebar } from "./SideBar";
-import { BaseIcon } from "./BaseIcon";
+import { BaseList } from "./BaseList";
 
 
 function MainContent(){
@@ -9,9 +9,7 @@ function MainContent(){
       <h1 className="text-[27px] font-semibold mb-4">Home</h1>
       <h3 className="text-sm mb-4">Opened Anytime</h3>
       <div className="grid grid-cols-2 gap-4">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <BaseIcon key={i} value={i}/>
-        ))}
+        <BaseList/>
       </div>
     </main>
   );

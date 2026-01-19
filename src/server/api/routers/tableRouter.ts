@@ -9,7 +9,10 @@ export const tableRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       await assertTableAccess(ctx, input.tableId);
 
-      const table = ctx.db.table.findUnique({ where: { id: input.tableId } });
+      const table = await ctx.db.table.findUnique({ where: { id: input.tableId } });
+      if(!table) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
       return { table };
   }),
 

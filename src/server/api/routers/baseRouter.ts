@@ -17,10 +17,16 @@ export const baseRouter = createTRPCRouter({
 
   getBaseById: protectedProcedure
     .input(z.object({ baseId: z.string().min(1) }))
-    .query(({ ctx, input }) => {
-        return ctx.db.base.findUnique({
+    .query(async ({ ctx, input }) => {
+        const base = await ctx.db.base.findUnique({
             where: { ownerId: ctx.session.user.id, id: input.baseId }
         })
+
+        if(!base) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
+
+        return base;
     }),
 
   // ------------------

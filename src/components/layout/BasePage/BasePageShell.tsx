@@ -10,17 +10,31 @@ import { TableProvider, TEST_TABLE_ID } from "~/components/table/controller/Tabl
 import { api as trpc } from "~/trpc/react";
 import type { CellMap, ColumnType } from "~/components/table/controller/tableTypes";
 
-export function BasePageShell() {
-  const rowsQuery = trpc.row.getRowsWithCells.useQuery({ tableId: TEST_TABLE_ID });
-  const columnsQuery = trpc.column.getColumns.useQuery({ tableId: TEST_TABLE_ID });
+interface BasePageShellProps {
+  baseId: string;
+}
 
-  if (rowsQuery.isLoading || columnsQuery.isLoading) {
-    return <div>Loading table…</div>;
-  }
+export function BasePageShell({ baseId }: BasePageShellProps) {
+  const tablesQuery = trpc.table.listTablesByBaseId.useQuery({ baseId });
 
-  if (!rowsQuery.data || !columnsQuery.data) {
-    return <div>Failed to load table</div>;
-  }
+  // Only pick tableId if data exists
+  const tableId = tablesQuery.data?.[0]?.id;
+
+  // Queries always called, but conditionally enabled
+  const rowsQuery = trpc.row.getRowsWithCells.useQuery(
+    { tableId: tableId || "" },
+    { enabled: !!tableId }
+  );
+
+  const columnsQuery = trpc.column.getColumns.useQuery(
+    { tableId: tableId || "" },
+    { enabled: !!tableId }
+  );
+
+  if (tablesQuery.isLoading) return <div>Loading tables…</div>;
+  if (!tablesQuery.data || tablesQuery.data.length === 0) return <div>No tables found</div>;
+  if (rowsQuery.isLoading || columnsQuery.isLoading) return <div>Loading table…</div>;
+  if (!rowsQuery.data || !columnsQuery.data) return <div>Failed to load table</div>;
 
   const backendCells = rowsQuery.data.cells;
 
