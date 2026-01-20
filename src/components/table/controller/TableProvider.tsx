@@ -9,8 +9,6 @@ import type { Column, Row, CellMap, CellValue, TableRow, ColumnType } from "./ta
 import { TableCell } from "../TableCell";
 import { api as trpc } from "~/trpc/react";
 
-export const TEST_TABLE_ID = "cmk732o8z0002rxrtztx6teww";
-
 export type TableProviderState = {
   rows: TableRow[];
   columns: Column[];
@@ -20,12 +18,12 @@ export type TableProviderState = {
   setActiveCell: (cell: { rowId: string; columnId: string } | null) => void;
   setGlobalSearch: (search: string) => void;
   registerRef: (id: string, el: HTMLDivElement | null) => void;
-  updateCell: (tableId: string, rowId: string, columnId: string, value: CellValue) => void;
-  handleAddRow: (orderNum: number, tableId: string) => void;
-  handleDeleteRow: (rowId: string, tableId: string) => void;
-  handleAddColumn: (orderNum: number, tableId: string, label: string, type: ColumnType) => void;
-  handleDeleteColumn: (columnId: string, tableId: string) => void;
-  handleRenameColumn: (columnId: string, newLabel: string, tableId: string) => void;
+  updateCell: (rowId: string, columnId: string, value: CellValue) => void;
+  handleAddRow: (orderNum: number) => void;
+  handleDeleteRow: (rowId: string) => void;
+  handleAddColumn: (orderNum: number, label: string, type: ColumnType) => void;
+  handleDeleteColumn: (columnId: string) => void;
+  handleRenameColumn: (columnId: string, newLabel: string) => void;
   sorting: SortingState;
   columnFilters: ColumnFiltersState;
   columnSizing: ColumnSizingState;
@@ -46,6 +44,7 @@ export const useTableController = () => {
 
 type TableProviderProps = {
   children: ReactNode;
+  tableId: string;
   initialRows: Row[];
   initialColumns: Column[];
   initialCells: CellMap;
@@ -60,7 +59,7 @@ function createTableRow(row: Row): TableRow {
   };
 }
 
-export function TableProvider({ children, initialRows, initialColumns, initialCells, initialGlobalSearch = "" }: TableProviderProps) {
+export function TableProvider({ children, tableId, initialRows, initialColumns, initialCells, initialGlobalSearch = "" }: TableProviderProps) {
   // 1. Initialize with stable internal IDs
   const [rows, setRows] = useState<TableRow[]>(() => initialRows.map(r => createTableRow({ ...r, internalId: r.id })));
   const [columns, setColumns] = useState<Column[]>(() => initialColumns.map(c => ({ ...c, internalId: c.id, columnType: c.columnType })));
@@ -119,7 +118,6 @@ export function TableProvider({ children, initialRows, initialColumns, initialCe
     }
   }, [initialCells]);
 
-
   // -----------------------
   // tRPC mutations
   // -----------------------
@@ -169,7 +167,7 @@ export function TableProvider({ children, initialRows, initialColumns, initialCe
   // -----------------------
   // Cell updates
   // -----------------------
-  const updateCell = useCallback((tableId: string, stableRowId: string, stableColumnId: string, value: CellValue) => {
+  const updateCell = useCallback((stableRowId: string, stableColumnId: string, value: CellValue) => {
     const key = `${stableRowId}:${stableColumnId}`;
     setCells(prev => ({ ...prev, [key]: value }));
     const actualRow = rows.find(r => r.internalId === stableRowId || r.id === stableRowId);
@@ -184,7 +182,7 @@ export function TableProvider({ children, initialRows, initialColumns, initialCe
     };
 
     pendingCellUpdatesRef.current.push(payload);
-  }, [rows, columns]);
+  }, [rows, columns, tableId]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -203,40 +201,40 @@ export function TableProvider({ children, initialRows, initialColumns, initialCe
   // -----------------------
   // Structural Operations
   // -----------------------
-  const handleAddRow = useCallback((orderNum: number, tableId: string) => {
+  const handleAddRow = useCallback((orderNum: number) => {
     const optimisticId = `optimistic-row-${crypto.randomUUID()}`;
     setRows(prev => [...prev, { id: optimisticId, internalId: optimisticId, order: orderNum, optimistic: true, cells: {} }]);
     addRowMutation.mutate({ tableId, orderNum, optimisticId });
-  }, [addRowMutation]);
+  }, [addRowMutation, tableId]);
 
-  const handleAddColumn = useCallback((orderNum: number, tableId: string, label: string, type: ColumnType) => {
+  const handleAddColumn = useCallback((orderNum: number, label: string, type: ColumnType) => {
     const optimisticId = `optimistic-col-${crypto.randomUUID()}`;
     setColumns(prev => [...prev, { id: optimisticId, internalId: optimisticId, label, order: orderNum, columnType: type, optimistic: true }]);
     addColumnMutation.mutate({ tableId, label, orderNum, type, optimisticId });
-  }, [addColumnMutation]);
+  }, [addColumnMutation, tableId]);
 
-  const handleDeleteRow = useCallback((rowId: string, tableId: string) => {
+  const handleDeleteRow = useCallback((rowId: string) => {
     beginStructureMutation();
     setRows(prev => prev.filter(r => r.id !== rowId && r.internalId !== rowId));
     deleteRowMutation.mutate(
       { tableId, rowId },
       { onSettled: endStructureMutation }
     );
-  }, [deleteRowMutation]);
+  }, [deleteRowMutation, tableId]);
 
-  const handleDeleteColumn = useCallback((columnId: string, tableId: string) => {
+  const handleDeleteColumn = useCallback((columnId: string) => {
     beginStructureMutation();
     setColumns(prev => prev.filter(c => c.id !== columnId && c.internalId !== columnId));
     deleteColumnMutation.mutate(
       { tableId, columnId },
       { onSettled: endStructureMutation }
     );
-  }, [deleteColumnMutation]);
+  }, [deleteColumnMutation, tableId]);
 
-  const handleRenameColumn = useCallback((columnId: string, newLabel: string, tableId: string) => {
+  const handleRenameColumn = useCallback((columnId: string, newLabel: string) => {
     setColumns(prev => prev.map(c => (c.id === columnId || c.internalId === columnId) ? { ...c, label: newLabel } : c));
     renameColumnMutation.mutate({ tableId, columnId, newLabel });
-  }, [renameColumnMutation]);
+  }, [renameColumnMutation, tableId]);
 
   // -----------------------
   // Table Setup
@@ -294,7 +292,7 @@ export function TableProvider({ children, initialRows, initialColumns, initialCe
               columnId={colId}
               columnType={resolvedType}
               onClick={() => setActiveCell({ rowId: rId, columnId: colId })}
-              onChange={value => updateCell(TEST_TABLE_ID, rId, colId, value)}
+              onChange={value => updateCell(rId, colId, value)}
               registerRef={registerRef}
             />
           );

@@ -213,6 +213,7 @@ export function BasePageShell({ baseId }: BasePageShellProps) {
   return (
     <TableProvider
       key={activeTableId}
+      tableId={activeTableId ?? ""}
       initialRows={initialRows}
       initialColumns={initialColumns}
       initialCells={initialCells}

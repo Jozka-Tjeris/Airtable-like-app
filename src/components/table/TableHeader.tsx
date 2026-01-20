@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { flexRender, type Header } from "@tanstack/react-table";
-import { TEST_TABLE_ID, useTableController } from "@/components/table/controller/TableProvider";
+import { useTableController } from "@/components/table/controller/TableProvider";
 import { type ColumnType, type TableRow, COLUMN_CONFIG } from "./controller/tableTypes";
 
 export function TableHeader() {
@@ -34,7 +34,7 @@ export function TableHeader() {
     const typeInput = prompt("Enter column type (text, number) [default is text]:", "text");
     if (typeInput === null) return;
     const type: ColumnType = typeInput.toLowerCase().trim() === "number" ? "number" : "text";
-    handleAddColumn(columns.length + 1, TEST_TABLE_ID, name, type);
+    handleAddColumn(columns.length + 1, name, type);
   }, [columns.length, handleAddColumn]);
 
   const onFilterColumnClick = useCallback((header: Header<TableRow, unknown>, columnType: string) => {
@@ -79,7 +79,7 @@ export function TableHeader() {
                   }`}
                   onContextMenu={(e) => {
                     e.preventDefault();
-                    if (window.confirm(`Delete column?`)) handleDeleteColumn(columnId, TEST_TABLE_ID);
+                    if (window.confirm(`Delete column?`)) handleDeleteColumn(columnId);
                   }}
                 >
                   {!header.isPlaceholder && (
@@ -96,7 +96,7 @@ export function TableHeader() {
                           onClick={(e) => {e.stopPropagation();}}
                           onDoubleClick={() => {
                             const newLabel = prompt("Enter new column name:");
-                            if (newLabel && newLabel.trim() !== "") handleRenameColumn(columnId, newLabel.trim(), TEST_TABLE_ID);
+                            if (newLabel && newLabel.trim() !== "") handleRenameColumn(columnId, newLabel.trim());
                           }}
                         >
                           {flexRender(header.column.columnDef.header, header.getContext())}
