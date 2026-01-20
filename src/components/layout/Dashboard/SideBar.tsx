@@ -1,29 +1,10 @@
 "use client"
 
-import { api as trpc } from "~/trpc/react";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { handleCreateBase } from "~/components/base/useBaseMutations";
 
 export function Sidebar() {
-    const router = useRouter();
-    const utils = trpc.useUtils();
     const [creating, setCreating] = useState(false);
-
-    const createBaseMutation = trpc.base.createBase.useMutation({
-        onSuccess: async (newBase) => {
-        await utils.base.listBases.invalidate(); // Refresh the base list
-        router.push(`/base/${newBase.id}`); // Redirect to the new base
-        },
-        onError: (err) => {
-        console.error("Failed to create base:", err);
-        setCreating(false);
-        },
-    });
-
-    const handleCreateBase = () => {
-        setCreating(true);
-        createBaseMutation.mutate({ name: "Untitled Base" });
-    };
 
     return <aside className="flex flex-col w-75 border-r p-4 gap-2 h-full">
         <div className="min-h-145">
@@ -115,7 +96,17 @@ export function Sidebar() {
             </a>
             <div>
                 <button
-                onClick={handleCreateBase}
+                onClick={async () => {
+                    setCreating(true);
+                    try {
+                        await handleCreateBase("Untitled Base"); // handleCreateBase should return mutateAsync
+                    } catch (err) {
+                        alert("Failed to create base");
+                        console.error(err);
+                    } finally {
+                        setCreating(false);
+                    }
+                }}
                 disabled={creating}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
                 >
