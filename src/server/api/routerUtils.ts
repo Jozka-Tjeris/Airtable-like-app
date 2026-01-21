@@ -6,7 +6,9 @@ import type { createTRPCContext } from "~/server/api/trpc";
 export type Context = Awaited<ReturnType<typeof createTRPCContext>>;
 
 // Utility to convert cell array to key-value map
-export function normalizeCells(cells: { rowId: string; columnId: string; value: CellValue | null }[]) {
+export function normalizeCells(
+  cells: { rowId: string; columnId: string; value: CellValue | null }[],
+) {
   const map: Record<string, CellValue | null> = {};
   for (const cell of cells) {
     const key = `${cell.rowId}:${cell.columnId}`;
@@ -18,7 +20,7 @@ export function normalizeCells(cells: { rowId: string; columnId: string; value: 
 export async function withTableLock<T>(
   tx: Prisma.TransactionClient,
   tableId: string,
-  fn: (tx: Prisma.TransactionClient) => Promise<T>
+  fn: (tx: Prisma.TransactionClient) => Promise<T>,
 ): Promise<T> {
   await tx.$executeRaw`
     SELECT 1 FROM "Table"
@@ -30,10 +32,7 @@ export async function withTableLock<T>(
 }
 
 // Use this for read-only queries
-export async function assertTableAccess(
-  ctx: Context,
-  tableId: string
-) {
+export async function assertTableAccess(ctx: Context, tableId: string) {
   if (!ctx.session?.user) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
@@ -56,7 +55,7 @@ export async function assertTableAccess(
 export async function withAuthorizedTableLock<T>(
   ctx: Context,
   tableId: string,
-  fn: (tx: Prisma.TransactionClient) => Promise<T>
+  fn: (tx: Prisma.TransactionClient) => Promise<T>,
 ) {
   // tx here is created automatically by ctx.db.$transaction, same API as ctx.db
   return ctx.db.$transaction(async (tx) => {

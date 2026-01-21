@@ -14,40 +14,48 @@ export function BaseIcon({
   const { handleRenameBase, handleDeleteBase } = useBaseMutations();
   return (
     <div
-      className="flex relative rounded-md bg-white p-4 border border-gray-200"
+      className="relative flex rounded-md border border-gray-200 bg-white p-4"
       tabIndex={tabIndex}
     >
-      <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-[#0d7f78] text-white">
+      <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#0d7f78] text-white">
         <span>{name.slice(0, 2) ?? "U"}</span>
       </div>
 
-      <div className="flex flex-col ml-2 justify-center w-[75%]">
+      <div className="ml-2 flex w-[75%] flex-col justify-center">
         <div className="flex flex-row">
           <a className="flex flex-1" href={`/base/${baseId}`}>
             <h3 className="font-normal">{name}</h3>
           </a>
-          <button className="px-4 w-6 cursor-pointer" 
+          <button
+            className="w-6 cursor-pointer px-4"
             onClick={() => {
-                const newName = prompt("Set new name for base:");
-                if(newName === null) return;
-                if(newName.trim() === ""){
-                    alert("Base name cannot be empty");
-                    return;
-                }
-                handleRenameBase(baseId, newName.trim());
-            }}>
+              const newName = prompt("Set new name for base:");
+              if (newName === null) return;
+              if (newName.trim() === "") {
+                alert("Base name cannot be empty");
+                return;
+              }
+              handleRenameBase(baseId, newName.trim());
+            }}
+          >
             ✏️
           </button>
-          <button className="px-4 w-6 cursor-pointer"
+          <button
+            className="w-6 cursor-pointer px-4"
             onClick={() => {
               if (window.confirm(`Delete base?`)) handleDeleteBase(baseId);
-            }}>
+            }}
+          >
             🗑️
           </button>
         </div>
         <div className="text-xs text-gray-500">
           <span>
-            Opened {Math.floor((Date.now() - new Date(updatedAt).getTime()) / (1000 * 60 * 60))} hours ago
+            Opened{" "}
+            {Math.floor(
+              (Date.now() - new Date(updatedAt).getTime()) / (1000 * 60 * 60),
+            )}{" "}
+            hours ago
           </span>
         </div>
       </div>

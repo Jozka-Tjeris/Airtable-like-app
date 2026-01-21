@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { BaseTable } from "~/components/table/BaseTable";
 import { StickyColumnsBar } from "./StickyColumnsBar";
@@ -15,7 +15,7 @@ export function MainTableContent() {
   // Synchronize the vertical scroll
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop } = e.currentTarget;
-    
+
     if (stickyScrollRef.current) {
       stickyScrollRef.current.scrollTop = scrollTop;
     }
@@ -25,7 +25,10 @@ export function MainTableContent() {
     const handleClickOutside = (e: MouseEvent) => {
       if (!activeCell) return;
       // If the click is NOT in the sidebar AND NOT in the table
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setActiveCell(null);
       }
     };
@@ -34,9 +37,16 @@ export function MainTableContent() {
   }, [activeCell, setActiveCell]);
 
   return (
-    <div ref={containerRef} className="flex flex-row h-full w-full overflow-hidden">
-      <StickyColumnsBar scrollRef={stickyScrollRef}/>
-      <div ref={mainScrollRef} onScroll={handleScroll} className="overflow-auto flex-1 min-w-0">
+    <div
+      ref={containerRef}
+      className="flex h-full w-full flex-row overflow-hidden"
+    >
+      <StickyColumnsBar scrollRef={stickyScrollRef} />
+      <div
+        ref={mainScrollRef}
+        onScroll={handleScroll}
+        className="min-w-0 flex-1 overflow-auto"
+      >
         <BaseTable />
       </div>
     </div>

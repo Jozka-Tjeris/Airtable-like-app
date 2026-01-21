@@ -13,8 +13,9 @@ const globalForPrisma = globalThis as unknown as GlobalForPrisma;
 
 const initPrisma = () => {
   // Reuse existing pool or create a new one
-  const pool = globalForPrisma.pgPool ?? new Pool({ connectionString: env.DATABASE_URL });
-  
+  const pool =
+    globalForPrisma.pgPool ?? new Pool({ connectionString: env.DATABASE_URL });
+
   // Persist the pool globally in development
   if (env.NODE_ENV !== "production") globalForPrisma.pgPool = pool;
 
@@ -22,7 +23,8 @@ const initPrisma = () => {
 
   return new PrismaClient({
     adapter,
-    log: env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+    log:
+      env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
   });
 };
 

@@ -20,7 +20,7 @@ export function TableSelectionBar({
   creatingTable,
 }: TableSelectionBarProps) {
   return (
-    <div className="shrink-0 h-8 border-t border-gray-300 bg-blue-100">
+    <div className="h-8 shrink-0 border-t border-gray-300 bg-blue-100">
       <div className="flex h-full items-stretch">
         {tables.map((table) => {
           const isActive = table.id === activeTableId;
@@ -28,19 +28,17 @@ export function TableSelectionBar({
           return (
             <div
               key={table.id}
-              className={`flex items-center h-full px-2 border-r cursor-pointer select-none
-                ${isActive ? "bg-blue-500 text-white hover:bg-blue-600" : "bg-white hover:bg-gray-100"}
-              `}
+              className={`flex h-full cursor-pointer items-center border-r px-2 select-none ${isActive ? "bg-blue-500 text-white hover:bg-blue-600" : "bg-white hover:bg-gray-100"} `}
               onClick={() => onTableSelect(table.id)}
               onDoubleClick={() => onRenameTable(table.id)}
             >
-              <span className="truncate max-w-[120px]">{table.name}</span>
+              <span className="max-w-[120px] truncate">{table.name}</span>
               <button
                 onClick={(e) => {
                   e.stopPropagation(); // prevent selecting tab
                   onDeleteTable(table.id);
                 }}
-                className="ml-2 text-black hover:text-red-500 text-xs"
+                className="ml-2 text-xs text-black hover:text-red-500"
                 title="Delete table"
               >
                 ✕
@@ -53,7 +51,7 @@ export function TableSelectionBar({
         <button
           onClick={onCreateTable}
           disabled={creatingTable}
-          className="flex items-center h-full px-3 bg-white hover:bg-gray-100 border-r text-sm font-medium"
+          className="flex h-full items-center border-r bg-white px-3 text-sm font-medium hover:bg-gray-100"
         >
           + Add table
         </button>

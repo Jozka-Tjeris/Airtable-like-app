@@ -1,11 +1,35 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useMemo, type ReactNode, useRef, useEffect } from "react";
-import { useReactTable, getCoreRowModel, getFilteredRowModel, getSortedRowModel, type ColumnDef,
-  type SortingState, type ColumnFiltersState, type VisibilityState, type ColumnSizingState,
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useMemo,
+  type ReactNode,
+  useRef,
+  useEffect,
+} from "react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getSortedRowModel,
+  type ColumnDef,
+  type SortingState,
+  type ColumnFiltersState,
+  type VisibilityState,
+  type ColumnSizingState,
   type Table,
- } from "@tanstack/react-table";
-import type { Column, Row, CellMap, CellValue, TableRow, ColumnType } from "./tableTypes";
+} from "@tanstack/react-table";
+import type {
+  Column,
+  Row,
+  CellMap,
+  CellValue,
+  TableRow,
+  ColumnType,
+} from "./tableTypes";
 import { TableCell } from "../TableCell";
 import { api as trpc } from "~/trpc/react";
 
@@ -38,7 +62,8 @@ const TableContext = createContext<TableProviderState | undefined>(undefined);
 
 export const useTableController = () => {
   const ctx = useContext(TableContext);
-  if (!ctx) throw new Error("useTableController must be used within TableProvider");
+  if (!ctx)
+    throw new Error("useTableController must be used within TableProvider");
   return ctx;
 };
 
@@ -59,13 +84,31 @@ function createTableRow(row: Row): TableRow {
   };
 }
 
-export function TableProvider({ children, tableId, initialRows, initialColumns, initialCells, initialGlobalSearch = "" }: TableProviderProps) {
+export function TableProvider({
+  children,
+  tableId,
+  initialRows,
+  initialColumns,
+  initialCells,
+  initialGlobalSearch = "",
+}: TableProviderProps) {
   // 1. Initialize with stable internal IDs
-  const [rows, setRows] = useState<TableRow[]>(() => initialRows.map(r => createTableRow({ ...r, internalId: r.id })));
-  const [columns, setColumns] = useState<Column[]>(() => initialColumns.map(c => ({ ...c, internalId: c.id, columnType: c.columnType })));
+  const [rows, setRows] = useState<TableRow[]>(() =>
+    initialRows.map((r) => createTableRow({ ...r, internalId: r.id })),
+  );
+  const [columns, setColumns] = useState<Column[]>(() =>
+    initialColumns.map((c) => ({
+      ...c,
+      internalId: c.id,
+      columnType: c.columnType,
+    })),
+  );
   const [cells, setCells] = useState<CellMap>(initialCells);
-  
-  const [activeCell, setActiveCell] = useState<{ rowId: string; columnId: string } | null>(null);
+
+  const [activeCell, setActiveCell] = useState<{
+    rowId: string;
+    columnId: string;
+  } | null>(null);
   const [globalSearch, setGlobalSearch] = useState<string>(initialGlobalSearch);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -93,22 +136,38 @@ export function TableProvider({ children, tableId, initialRows, initialColumns, 
     structureMutationInFlightRef.current -= 1;
   };
 
-  const getIsStructureStable = useCallback(() => structureMutationInFlightRef.current === 0, []);
+  const getIsStructureStable = useCallback(
+    () => structureMutationInFlightRef.current === 0,
+    [],
+  );
 
   const pendingCellUpdatesRef = useRef<
-    Array<{ rowId: string; columnId: string; value: CellValue; tableId: string; }>
+    Array<{
+      rowId: string;
+      columnId: string;
+      value: CellValue;
+      tableId: string;
+    }>
   >([]);
 
   // Data update effects (refresh data states once tRPC data comes in)
   useEffect(() => {
     if (initialRows.length > 0) {
-      setRows(initialRows.map(r => createTableRow({ ...r, internalId: r.id })));
+      setRows(
+        initialRows.map((r) => createTableRow({ ...r, internalId: r.id })),
+      );
     }
   }, [initialRows]);
 
   useEffect(() => {
     if (initialColumns.length > 0) {
-      setColumns(initialColumns.map(c => ({ ...c, internalId: c.id, columnType: c.columnType })));
+      setColumns(
+        initialColumns.map((c) => ({
+          ...c,
+          internalId: c.id,
+          columnType: c.columnType,
+        })),
+      );
     }
   }, [initialColumns]);
 
@@ -128,13 +187,19 @@ export function TableProvider({ children, tableId, initialRows, initialColumns, 
       beginStructureMutation();
     },
     onSuccess: ({ row, optimisticId }) => {
-      setRows(prev => prev.map(r => 
-        createTableRow(r.id === optimisticId ? { ...row, internalId: optimisticId, optimistic: false} : r
-      )));
+      setRows((prev) =>
+        prev.map((r) =>
+          createTableRow(
+            r.id === optimisticId
+              ? { ...row, internalId: optimisticId, optimistic: false }
+              : r,
+          ),
+        ),
+      );
       // NO LONGER NEEDED: Rewriting all cell keys is unnecessary because we kept internalId stable!
     },
     onError: (_, { optimisticId }) => {
-      setRows(prev => prev.filter(r => r.id !== optimisticId));
+      setRows((prev) => prev.filter((r) => r.id !== optimisticId));
     },
     onSettled: () => {
       endStructureMutation();
@@ -146,14 +211,23 @@ export function TableProvider({ children, tableId, initialRows, initialColumns, 
       beginStructureMutation();
     },
     onSuccess: ({ column, optimisticId }) => {
-      setColumns(prev => prev.map(c => 
-        c.id === optimisticId 
-          ? { id: column.id, internalId: optimisticId, label: column.name, columnType: column.columnType as ColumnType, order: column.order, optimistic: false } 
-          : c
-      ));
+      setColumns((prev) =>
+        prev.map((c) =>
+          c.id === optimisticId
+            ? {
+                id: column.id,
+                internalId: optimisticId,
+                label: column.name,
+                columnType: column.columnType as ColumnType,
+                order: column.order,
+                optimistic: false,
+              }
+            : c,
+        ),
+      );
     },
     onError: (_, { optimisticId }) => {
-      setColumns(prev => prev.filter(c => c.id !== optimisticId));
+      setColumns((prev) => prev.filter((c) => c.id !== optimisticId));
     },
     onSettled: () => {
       endStructureMutation();
@@ -167,22 +241,29 @@ export function TableProvider({ children, tableId, initialRows, initialColumns, 
   // -----------------------
   // Cell updates
   // -----------------------
-  const updateCell = useCallback((stableRowId: string, stableColumnId: string, value: CellValue) => {
-    const key = `${stableRowId}:${stableColumnId}`;
-    setCells(prev => ({ ...prev, [key]: value }));
-    const actualRow = rows.find(r => r.internalId === stableRowId || r.id === stableRowId);
-    const actualCol = columns.find(c => c.internalId === stableColumnId || c.id === stableColumnId);
-    if (!actualCol) return;
+  const updateCell = useCallback(
+    (stableRowId: string, stableColumnId: string, value: CellValue) => {
+      const key = `${stableRowId}:${stableColumnId}`;
+      setCells((prev) => ({ ...prev, [key]: value }));
+      const actualRow = rows.find(
+        (r) => r.internalId === stableRowId || r.id === stableRowId,
+      );
+      const actualCol = columns.find(
+        (c) => c.internalId === stableColumnId || c.id === stableColumnId,
+      );
+      if (!actualCol) return;
 
-    const payload = {
-      rowId: actualRow?.id ?? stableRowId,
-      columnId: actualCol?.id ?? stableColumnId,
-      value: String(value),
-      tableId: tableId,
-    };
+      const payload = {
+        rowId: actualRow?.id ?? stableRowId,
+        columnId: actualCol?.id ?? stableColumnId,
+        value: String(value),
+        tableId: tableId,
+      };
 
-    pendingCellUpdatesRef.current.push(payload);
-  }, [rows, columns, tableId]);
+      pendingCellUpdatesRef.current.push(payload);
+    },
+    [rows, columns, tableId],
+  );
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -201,53 +282,106 @@ export function TableProvider({ children, tableId, initialRows, initialColumns, 
   // -----------------------
   // Structural Operations
   // -----------------------
-  const handleAddRow = useCallback((orderNum: number) => {
-    const optimisticId = `optimistic-row-${crypto.randomUUID()}`;
-    setRows(prev => [...prev, { id: optimisticId, internalId: optimisticId, order: orderNum, optimistic: true, cells: {} }]);
-    addRowMutation.mutate({ tableId, orderNum, optimisticId });
-  }, [addRowMutation, tableId]);
+  const handleAddRow = useCallback(
+    (orderNum: number) => {
+      const optimisticId = `optimistic-row-${crypto.randomUUID()}`;
+      setRows((prev) => [
+        ...prev,
+        {
+          id: optimisticId,
+          internalId: optimisticId,
+          order: orderNum,
+          optimistic: true,
+          cells: {},
+        },
+      ]);
+      addRowMutation.mutate({ tableId, orderNum, optimisticId });
+    },
+    [addRowMutation, tableId],
+  );
 
-  const handleAddColumn = useCallback((orderNum: number, label: string, type: ColumnType) => {
-    const optimisticId = `optimistic-col-${crypto.randomUUID()}`;
-    setColumns(prev => [...prev, { id: optimisticId, internalId: optimisticId, label, order: orderNum, columnType: type, optimistic: true }]);
-    addColumnMutation.mutate({ tableId, label, orderNum, type, optimisticId });
-  }, [addColumnMutation, tableId]);
+  const handleAddColumn = useCallback(
+    (orderNum: number, label: string, type: ColumnType) => {
+      const optimisticId = `optimistic-col-${crypto.randomUUID()}`;
+      setColumns((prev) => [
+        ...prev,
+        {
+          id: optimisticId,
+          internalId: optimisticId,
+          label,
+          order: orderNum,
+          columnType: type,
+          optimistic: true,
+        },
+      ]);
+      addColumnMutation.mutate({
+        tableId,
+        label,
+        orderNum,
+        type,
+        optimisticId,
+      });
+    },
+    [addColumnMutation, tableId],
+  );
 
-  const handleDeleteRow = useCallback((rowId: string) => {
-    beginStructureMutation();
-    setRows(prev => prev.filter(r => r.id !== rowId && r.internalId !== rowId));
-    deleteRowMutation.mutate(
-      { tableId, rowId },
-      { onSettled: endStructureMutation }
-    );
-  }, [deleteRowMutation, tableId]);
+  const handleDeleteRow = useCallback(
+    (rowId: string) => {
+      beginStructureMutation();
+      setRows((prev) =>
+        prev.filter((r) => r.id !== rowId && r.internalId !== rowId),
+      );
+      deleteRowMutation.mutate(
+        { tableId, rowId },
+        { onSettled: endStructureMutation },
+      );
+    },
+    [deleteRowMutation, tableId],
+  );
 
-  const handleDeleteColumn = useCallback((columnId: string) => {
-    beginStructureMutation();
-    setColumns(prev => prev.filter(c => c.id !== columnId && c.internalId !== columnId));
-    deleteColumnMutation.mutate(
-      { tableId, columnId },
-      { onSettled: endStructureMutation }
-    );
-  }, [deleteColumnMutation, tableId]);
+  const handleDeleteColumn = useCallback(
+    (columnId: string) => {
+      beginStructureMutation();
+      setColumns((prev) =>
+        prev.filter((c) => c.id !== columnId && c.internalId !== columnId),
+      );
+      deleteColumnMutation.mutate(
+        { tableId, columnId },
+        { onSettled: endStructureMutation },
+      );
+    },
+    [deleteColumnMutation, tableId],
+  );
 
-  const handleRenameColumn = useCallback((columnId: string, newLabel: string) => {
-    setColumns(prev => prev.map(c => (c.id === columnId || c.internalId === columnId) ? { ...c, label: newLabel } : c));
-    renameColumnMutation.mutate({ tableId, columnId, newLabel });
-  }, [renameColumnMutation, tableId]);
+  const handleRenameColumn = useCallback(
+    (columnId: string, newLabel: string) => {
+      setColumns((prev) =>
+        prev.map((c) =>
+          c.id === columnId || c.internalId === columnId
+            ? { ...c, label: newLabel }
+            : c,
+        ),
+      );
+      renameColumnMutation.mutate({ tableId, columnId, newLabel });
+    },
+    [renameColumnMutation, tableId],
+  );
 
   // -----------------------
   // Table Setup
   // -----------------------
-  const visibleRows = useMemo(() => [...rows].sort((a, b) => a.order - b.order), [rows]);
+  const visibleRows = useMemo(
+    () => [...rows].sort((a, b) => a.order - b.order),
+    [rows],
+  );
 
   const tableData = useMemo<TableRow[]>(() => {
     const search = globalSearch.trim().toLowerCase();
     return visibleRows
-      .filter(row => {
+      .filter((row) => {
         if (!search) return true;
         const rId = row.internalId ?? row.id;
-        return columns.some(col => {
+        return columns.some((col) => {
           const cId = col.internalId ?? col.id;
           const value = cells[`${rId}:${cId}`];
           return value != null && String(value).toLowerCase().includes(search);
@@ -261,7 +395,7 @@ export function TableProvider({ children, tableId, initialRows, initialColumns, 
           order: idx,
           cells: {},
         };
-        columns.forEach(col => {
+        columns.forEach((col) => {
           const cId = col.internalId ?? col.id;
           record.cells[cId] = cells[`${rId}:${cId}`] ?? "";
         });
@@ -272,14 +406,14 @@ export function TableProvider({ children, tableId, initialRows, initialColumns, 
   const tableColumns = useMemo<ColumnDef<TableRow>[]>(() => {
     return columns.map((col) => {
       const colId = col.internalId ?? col.id;
-      const resolvedType = (col.columnType ?? "text");
+      const resolvedType = col.columnType ?? "text";
       return {
         id: colId,
-        accessorFn: row => row.cells[colId],
+        accessorFn: (row) => row.cells[colId],
         header: col.label,
         size: col.width ?? 150,
         meta: { columnType: resolvedType },
-        cell: info => {
+        cell: (info) => {
           const rowElem = info.row.original;
           const rId = rowElem.internalId ?? rowElem.id;
           const cellKey = `${rId}:${colId}`;
@@ -292,11 +426,11 @@ export function TableProvider({ children, tableId, initialRows, initialColumns, 
               columnId={colId}
               columnType={resolvedType}
               onClick={() => setActiveCell({ rowId: rId, columnId: colId })}
-              onChange={value => updateCell(rId, colId, value)}
+              onChange={(value) => updateCell(rId, colId, value)}
               registerRef={registerRef}
             />
           );
-        }
+        },
       };
     });
   }, [columns, cells, updateCell, registerRef]);
@@ -312,7 +446,7 @@ export function TableProvider({ children, tableId, initialRows, initialColumns, 
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getRowId: row => row.internalId ?? row.id, // CRITICAL: Stability anchor
+    getRowId: (row) => row.internalId ?? row.id, // CRITICAL: Stability anchor
     columnResizeMode: "onChange",
   });
 
@@ -320,17 +454,66 @@ export function TableProvider({ children, tableId, initialRows, initialColumns, 
   useEffect(() => {
     if (!activeCell) return;
     const el = cellRefs.current[`${activeCell.rowId}:${activeCell.columnId}`];
-    if (el && document.activeElement?.tagName !== 'INPUT' && document.activeElement !== el) {
+    if (
+      el &&
+      document.activeElement?.tagName !== "INPUT" &&
+      document.activeElement !== el
+    ) {
       el.focus();
     }
   }, [activeCell]);
 
-  const contextValue = useMemo(() => ({
-    rows, columns, cells, activeCell, globalSearch,
-    setActiveCell, setGlobalSearch, registerRef, updateCell,
-    handleAddRow, handleDeleteRow, handleAddColumn, handleDeleteColumn, handleRenameColumn, getIsStructureStable, isNumericalValue,
-    table, sorting, columnFilters, columnSizing, headerHeight, setHeaderHeight
-  }), [rows, columns, cells, activeCell, globalSearch, columnFilters, columnSizing, table, sorting, headerHeight, registerRef, updateCell, handleAddRow, handleDeleteRow, handleAddColumn, handleDeleteColumn, handleRenameColumn, getIsStructureStable, isNumericalValue]);
+  const contextValue = useMemo(
+    () => ({
+      rows,
+      columns,
+      cells,
+      activeCell,
+      globalSearch,
+      setActiveCell,
+      setGlobalSearch,
+      registerRef,
+      updateCell,
+      handleAddRow,
+      handleDeleteRow,
+      handleAddColumn,
+      handleDeleteColumn,
+      handleRenameColumn,
+      getIsStructureStable,
+      isNumericalValue,
+      table,
+      sorting,
+      columnFilters,
+      columnSizing,
+      headerHeight,
+      setHeaderHeight,
+    }),
+    [
+      rows,
+      columns,
+      cells,
+      activeCell,
+      globalSearch,
+      columnFilters,
+      columnSizing,
+      table,
+      sorting,
+      headerHeight,
+      registerRef,
+      updateCell,
+      handleAddRow,
+      handleDeleteRow,
+      handleAddColumn,
+      handleDeleteColumn,
+      handleRenameColumn,
+      getIsStructureStable,
+      isNumericalValue,
+    ],
+  );
 
-  return <TableContext.Provider value={contextValue}>{children}</TableContext.Provider>;
+  return (
+    <TableContext.Provider value={contextValue}>
+      {children}
+    </TableContext.Provider>
+  );
 }

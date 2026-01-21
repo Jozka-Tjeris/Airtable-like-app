@@ -8,7 +8,10 @@ import { GridViewBar } from "./GridViewBar";
 import { ViewSelectorBar } from "./ViewSelectorBar";
 import { TableProvider } from "~/components/table/controller/TableProvider";
 import { api as trpc } from "~/trpc/react";
-import type { CellMap, ColumnType } from "~/components/table/controller/tableTypes";
+import type {
+  CellMap,
+  ColumnType,
+} from "~/components/table/controller/tableTypes";
 import { ContentRetriever } from "./ContentRetriever";
 
 interface BasePageShellProps {
@@ -58,12 +61,12 @@ export function BasePageShell({ baseId }: BasePageShellProps) {
   // -----------------------
   const rowsQuery = trpc.row.getRowsWithCells.useQuery(
     { tableId: activeTableId ?? "" },
-    { enabled: hasTables && !!activeTableId && !creatingTable }
+    { enabled: hasTables && !!activeTableId && !creatingTable },
   );
 
   const columnsQuery = trpc.column.getColumns.useQuery(
     { tableId: activeTableId ?? "" },
-    { enabled: hasTables && !!activeTableId && !creatingTable }
+    { enabled: hasTables && !!activeTableId && !creatingTable },
   );
 
   // -----------------------
@@ -92,10 +95,10 @@ export function BasePageShell({ baseId }: BasePageShellProps) {
         optimistic: true,
       };
 
-      utils.table.listTablesByBaseId.setData(
-        { baseId },
-        [...previousTables, optimisticTable]
-      );
+      utils.table.listTablesByBaseId.setData({ baseId }, [
+        ...previousTables,
+        optimisticTable,
+      ]);
 
       setActiveTableId(optimisticId);
 
@@ -105,12 +108,8 @@ export function BasePageShell({ baseId }: BasePageShellProps) {
     onSuccess: (table, _vars, ctx) => {
       if (!ctx) return;
 
-      utils.table.listTablesByBaseId.setData(
-        { baseId },
-        (tables = []) =>
-          tables.map(t =>
-            t.id === ctx.optimisticId ? table : t
-          )
+      utils.table.listTablesByBaseId.setData({ baseId }, (tables = []) =>
+        tables.map((t) => (t.id === ctx.optimisticId ? table : t)),
       );
 
       setActiveTableId(table.id);
@@ -119,14 +118,9 @@ export function BasePageShell({ baseId }: BasePageShellProps) {
     onError: (_err, _vars, ctx) => {
       if (!ctx) return;
 
-      utils.table.listTablesByBaseId.setData(
-        { baseId },
-        ctx.previousTables
-      );
+      utils.table.listTablesByBaseId.setData({ baseId }, ctx.previousTables);
 
-      setActiveTableId(
-        ctx.previousTables.at(-1)?.id ?? null
-      );
+      setActiveTableId(ctx.previousTables.at(-1)?.id ?? null);
     },
 
     onSettled: async () => {
@@ -152,8 +146,8 @@ export function BasePageShell({ baseId }: BasePageShellProps) {
         old?.map((t) =>
           t.id === tableId
             ? { ...t, name } // immutable update
-            : t
-        )
+            : t,
+        ),
       );
 
       return { previousTables };
@@ -161,7 +155,10 @@ export function BasePageShell({ baseId }: BasePageShellProps) {
     // Rollback on error
     onError: (_err, _vars, context) => {
       if (context?.previousTables) {
-        utils.table.listTablesByBaseId.setData({ baseId }, context.previousTables);
+        utils.table.listTablesByBaseId.setData(
+          { baseId },
+          context.previousTables,
+        );
       }
     },
     // Refresh authoritative data
@@ -182,8 +179,9 @@ export function BasePageShell({ baseId }: BasePageShellProps) {
         utils.table.listTablesByBaseId.getData({ baseId }) ?? [];
 
       // Optimistically remove the table from the list
-      utils.table.listTablesByBaseId.setData({ baseId }, (old) =>
-        old?.filter((t) => t.id !== tableId) ?? []
+      utils.table.listTablesByBaseId.setData(
+        { baseId },
+        (old) => old?.filter((t) => t.id !== tableId) ?? [],
       );
 
       // If the deleted table was active, update active table to first remaining or null
@@ -196,7 +194,10 @@ export function BasePageShell({ baseId }: BasePageShellProps) {
     // Rollback on error
     onError: (_err, _vars, context) => {
       if (context?.previousTables) {
-        utils.table.listTablesByBaseId.setData({ baseId }, context.previousTables);
+        utils.table.listTablesByBaseId.setData(
+          { baseId },
+          context.previousTables,
+        );
       }
     },
     // Refresh authoritative data after mutation
@@ -207,8 +208,8 @@ export function BasePageShell({ baseId }: BasePageShellProps) {
 
   const handleCreateTable = () => {
     const newTableName = prompt("Enter the new table name:", "New Table");
-    if(newTableName === null) return;
-    if(newTableName.trim() === ""){
+    if (newTableName === null) return;
+    if (newTableName.trim() === "") {
       alert("New table name cannot be blank");
       return;
     }
@@ -220,8 +221,8 @@ export function BasePageShell({ baseId }: BasePageShellProps) {
 
   const handleRenameTable = (tableId: string) => {
     const newTableName = prompt("Enter the new table name:");
-    if(newTableName === null) return;
-    if(newTableName.trim() === ""){
+    if (newTableName === null) return;
+    if (newTableName.trim() === "") {
       alert("New table name cannot be blank");
       return;
     }
@@ -235,7 +236,7 @@ export function BasePageShell({ baseId }: BasePageShellProps) {
     if (confirm("Are you sure you want to delete this table?")) {
       deleteTableMutation.mutate({ tableId });
     }
-  }
+  };
 
   // -----------------------
   // Initial table state
@@ -272,13 +273,11 @@ export function BasePageShell({ baseId }: BasePageShellProps) {
       initialColumns={initialColumns}
       initialCells={initialCells}
     >
-      <div className="flex flex-row h-screen w-full overflow-hidden">
+      <div className="flex h-screen w-full flex-row overflow-hidden">
         <LeftBar />
 
-        <div className="flex flex-col flex-1 min-w-0 min-h-0">
-          <TopBar 
-            baseId={baseId}
-          />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <TopBar baseId={baseId} />
 
           <TableSelectionBar
             tables={tablesQuery.data ?? []}
@@ -292,10 +291,10 @@ export function BasePageShell({ baseId }: BasePageShellProps) {
 
           <GridViewBar />
 
-          <div className="flex flex-row flex-1 min-w-0 min-h-0">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-row">
             <ViewSelectorBar />
 
-            <main className="flex-1 min-w-0 min-h-0">
+            <main className="min-h-0 min-w-0 flex-1">
               <ContentRetriever
                 hasTables={hasTables}
                 tablesLoading={tablesQuery.isLoading}

@@ -18,15 +18,15 @@ export const baseRouter = createTRPCRouter({
   getBaseById: protectedProcedure
     .input(z.object({ baseId: z.string().min(1) }))
     .query(async ({ ctx, input }) => {
-        const base = await ctx.db.base.findUnique({
-            where: { ownerId: ctx.session.user.id, id: input.baseId }
-        })
+      const base = await ctx.db.base.findUnique({
+        where: { ownerId: ctx.session.user.id, id: input.baseId },
+      });
 
-        if(!base) {
-          throw new TRPCError({ code: "NOT_FOUND" });
-        }
+      if (!base) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
 
-        return base;
+      return base;
     }),
 
   // ------------------
@@ -84,7 +84,7 @@ export const baseRouter = createTRPCRouter({
           select: { id: true },
         });
 
-        const tableIds = tables.map(t => t.id);
+        const tableIds = tables.map((t) => t.id);
 
         await tx.cell.deleteMany({
           where: {

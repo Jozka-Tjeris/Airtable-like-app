@@ -22,9 +22,10 @@ export const TableCell = memo(function TableCell({
   columnId,
   columnType,
   cellId,
-  registerRef
+  registerRef,
 }: TableCellProps) {
-  const { activeCell, getIsStructureStable, isNumericalValue } = useTableController();
+  const { activeCell, getIsStructureStable, isNumericalValue } =
+    useTableController();
   const [isEditing, setIsEditing] = useState(false);
   const [localValue, setLocalValue] = useState(value ?? "");
 
@@ -36,11 +37,16 @@ export const TableCell = memo(function TableCell({
   const isCommittingRef = useRef(false);
   const isCancellingRef = useRef(false);
 
-  const isActive = activeCell?.rowId === rowId && activeCell?.columnId === columnId;
+  const isActive =
+    activeCell?.rowId === rowId && activeCell?.columnId === columnId;
 
   // Keep refs in sync
-  useEffect(() => { localValueRef.current = localValue; }, [localValue]);
-  useEffect(() => { isEditingRef.current = isEditing; }, [isEditing]);
+  useEffect(() => {
+    localValueRef.current = localValue;
+  }, [localValue]);
+  useEffect(() => {
+    isEditingRef.current = isEditing;
+  }, [isEditing]);
 
   // Sync prop value when NOT editing
   useEffect(() => {
@@ -69,7 +75,12 @@ export const TableCell = memo(function TableCell({
 
   // Commit logic
   const commit = useCallback(() => {
-    if (!isEditingRef.current || isCommittingRef.current || isCancellingRef.current) return;
+    if (
+      !isEditingRef.current ||
+      isCommittingRef.current ||
+      isCancellingRef.current
+    )
+      return;
 
     const valueToCommit = localValueRef.current;
     isCommittingRef.current = true;
@@ -102,40 +113,65 @@ export const TableCell = memo(function TableCell({
     isCancellingRef.current = true;
     setLocalValue(value ?? "");
     setIsEditing(false);
-    setTimeout(() => { isCancellingRef.current = false; }, 0);
+    setTimeout(() => {
+      isCancellingRef.current = false;
+    }, 0);
   }, [value]);
 
   // Key handling
   const moveActiveCell = useMoveActiveCell();
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement | HTMLInputElement>) => {
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLDivElement | HTMLInputElement>,
+  ) => {
     if (!getIsStructureStable()) {
       e.preventDefault();
       return;
     }
     if (isEditing) {
       switch (e.key) {
-        case "Enter": e.preventDefault(); commit(); break;
-        case "Escape": e.preventDefault(); cancel(); break;
+        case "Enter":
+          e.preventDefault();
+          commit();
+          break;
+        case "Escape":
+          e.preventDefault();
+          cancel();
+          break;
         case "Tab":
           e.preventDefault();
           commit();
-          if(e.shiftKey) moveActiveCell("left")
+          if (e.shiftKey) moveActiveCell("left");
           else moveActiveCell("right");
           break;
       }
     } else if (isActive) {
-      if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Tab"].includes(e.key)) e.preventDefault();
+      if (
+        ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Tab"].includes(
+          e.key,
+        )
+      )
+        e.preventDefault();
       switch (e.key) {
-        case "Enter": setIsEditing(true); break;
-        case "Tab": 
-          cancel(); 
-          if(e.shiftKey) moveActiveCell("left")
-          else moveActiveCell("right"); 
+        case "Enter":
+          setIsEditing(true);
           break;
-        case "ArrowRight": moveActiveCell("right"); break;
-        case "ArrowLeft": moveActiveCell("left"); break;
-        case "ArrowUp": moveActiveCell("up"); break;
-        case "ArrowDown": moveActiveCell("down"); break;
+        case "Tab":
+          cancel();
+          if (e.shiftKey) moveActiveCell("left");
+          else moveActiveCell("right");
+          break;
+        case "ArrowRight":
+          moveActiveCell("right");
+          break;
+        case "ArrowLeft":
+          moveActiveCell("left");
+          break;
+        case "ArrowUp":
+          moveActiveCell("up");
+          break;
+        case "ArrowDown":
+          moveActiveCell("down");
+          break;
       }
     }
   };
@@ -157,8 +193,11 @@ export const TableCell = memo(function TableCell({
   useEffect(() => {
     if (!isEditing) return;
     const handleGlobalClick = (e: MouseEvent) => {
-     setTimeout(() => {
-        if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      setTimeout(() => {
+        if (
+          containerRef.current &&
+          !containerRef.current.contains(e.target as Node)
+        ) {
           commit();
         }
       }, 0);
@@ -180,20 +219,17 @@ export const TableCell = memo(function TableCell({
       ref={containerRef}
       data-cell-id={cellId}
       tabIndex={0}
-      className={`
-        relative w-full h-full px-2 py-1 flex items-center
-        cursor-text truncate transition-colors outline-none
-        hover:bg-gray-100
-        ${isActive
-          ? "border border-blue-500 shadow-[0_0_0_2px_rgba(60,120,255,1)] z-10 rounded-[1px]"
-          : "border border-transparent"}
-      `}
+      className={`relative flex h-full w-full cursor-text items-center truncate px-2 py-1 transition-colors outline-none hover:bg-gray-100 ${
+        isActive
+          ? "z-10 rounded-[1px] border border-blue-500 shadow-[0_0_0_2px_rgba(60,120,255,1)]"
+          : "border border-transparent"
+      } `}
       onMouseDown={handleMouseDown}
       onKeyDown={handleKeyDown}
     >
       {/* Display value when not editing */}
       {!isEditing && (
-        <span className="absolute inset-0 flex items-center px-2 truncate pointer-events-none select-none">
+        <span className="pointer-events-none absolute inset-0 flex items-center truncate px-2 select-none">
           {value ?? ""}
         </span>
       )}
@@ -204,9 +240,7 @@ export const TableCell = memo(function TableCell({
         value={localValue}
         disabled={!isEditing || !getIsStructureStable()}
         onChange={handleInputChange}
-        className={`absolute inset-0 w-full h-full px-2 outline-none bg-transparent
-          ${!isEditing ? "opacity-0 pointer-events-none" : ""}
-        `}
+        className={`absolute inset-0 h-full w-full bg-transparent px-2 outline-none ${!isEditing ? "pointer-events-none opacity-0" : ""} `}
       />
     </div>
   );

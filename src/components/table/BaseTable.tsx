@@ -13,12 +13,12 @@ export function BaseTable() {
        the table is wider than the screen.
     */
     <div className="w-max overflow-x-auto">
-      <table 
-        className="table-fixed border-collapse w-max min-w-full" 
+      <table
+        className="w-max min-w-full table-fixed border-collapse"
         style={{ width: "max-content" }}
       >
         {/* We keep the key on sorting so the header re-renders instantly */}
-        <TableHeader key={JSON.stringify(sorting)}/>
+        <TableHeader key={JSON.stringify(sorting)} />
         <TableBody />
       </table>
     </div>

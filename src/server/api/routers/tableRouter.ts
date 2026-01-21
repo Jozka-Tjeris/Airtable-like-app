@@ -9,12 +9,14 @@ export const tableRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       await assertTableAccess(ctx, input.tableId);
 
-      const table = await ctx.db.table.findUnique({ where: { id: input.tableId } });
-      if(!table) {
+      const table = await ctx.db.table.findUnique({
+        where: { id: input.tableId },
+      });
+      if (!table) {
         throw new TRPCError({ code: "NOT_FOUND" });
       }
       return { table };
-  }),
+    }),
 
   listTablesByBaseId: protectedProcedure
     .input(z.object({ baseId: z.string() }))
@@ -38,10 +40,12 @@ export const tableRouter = createTRPCRouter({
     }),
 
   createTable: protectedProcedure
-    .input(z.object({
-      baseId: z.string(),
-      name: z.string().min(1),
-    }))
+    .input(
+      z.object({
+        baseId: z.string(),
+        name: z.string().min(1),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const base = await ctx.db.base.findFirst({
         where: {
@@ -64,10 +68,12 @@ export const tableRouter = createTRPCRouter({
     }),
 
   renameTable: protectedProcedure
-    .input(z.object({
-      tableId: z.string(),
-      name: z.string().min(1),
-    }))
+    .input(
+      z.object({
+        tableId: z.string(),
+        name: z.string().min(1),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const result = await ctx.db.table.updateMany({
         where: {

@@ -16,14 +16,14 @@ export type Column = {
 
 export const COLUMN_CONFIG = {
   text: {
-    label: 'Text',
-    icon: 'A',
-    align: 'text-left',
+    label: "Text",
+    icon: "A",
+    align: "text-left",
   },
   number: {
-    label: 'Number',
-    icon: '#',
-    align: 'text-left',
+    label: "Number",
+    icon: "#",
+    align: "text-left",
   },
 } as const;
 
@@ -51,7 +51,7 @@ export type TableData = {
   id: string;
   createdAt: Date;
   updatedAt: Date;
-}
+};
 
 // Helpers
 export function toCellKey(address: CellAddress): CellKey {

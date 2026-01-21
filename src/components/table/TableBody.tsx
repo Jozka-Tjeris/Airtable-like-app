@@ -3,17 +3,12 @@ import { flexRender } from "@tanstack/react-table";
 import { useTableController } from "@/components/table/controller/TableProvider";
 
 /**
- * Notice: We've removed registerRef and activeCell from props 
+ * Notice: We've removed registerRef and activeCell from props
  * as they are now managed via the table instance or Context.
  */
 export function TableBody() {
-  const { 
-    table, 
-    rows, 
-    columns, 
-    handleAddRow, 
-    handleDeleteRow 
-  } = useTableController();
+  const { table, rows, columns, handleAddRow, handleDeleteRow } =
+    useTableController();
 
   const handleRowRightClick = useCallback(
     (e: React.MouseEvent, rowId: string, rowOrder: number) => {
@@ -22,14 +17,14 @@ export function TableBody() {
       e.stopPropagation();
 
       const confirmed = window.confirm(
-        `Delete row "${rowOrder + 1}"?\n\nThis will remove all its cell values.`
+        `Delete row "${rowOrder + 1}"?\n\nThis will remove all its cell values.`,
       );
 
       if (confirmed) {
         handleDeleteRow(rowId);
       }
     },
-    [handleDeleteRow]
+    [handleDeleteRow],
   );
 
   // -----------------------------
@@ -39,16 +34,22 @@ export function TableBody() {
     return (
       <tbody>
         <tr>
-          <td colSpan={columns.length || 1} className="px-4 py-2 text-center text-gray-500">
+          <td
+            colSpan={columns.length || 1}
+            className="px-4 py-2 text-center text-gray-500"
+          >
             No rows to display
           </td>
         </tr>
         {columns.length > 0 && (
           <tr className="bg-gray-50">
-            <td colSpan={columns.length || 1} className="h-full px-4 py-2 text-center">
+            <td
+              colSpan={columns.length || 1}
+              className="h-full px-4 py-2 text-center"
+            >
               <button
                 onClick={() => handleAddRow(rows.length + 1)}
-                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
+                className="rounded bg-green-500 px-4 py-2 text-white transition hover:bg-green-600"
               >
                 + Add Row
               </button>
@@ -67,15 +68,17 @@ export function TableBody() {
       {table.getRowModel().rows.map((row) => (
         <tr
           key={row.id}
-          className="border-b last:border-0 hover:bg-[#f0f0f0] h-10"
-          onContextMenu={(e) => {const rowOriginal = row.original;
+          className="h-10 border-b last:border-0 hover:bg-[#f0f0f0]"
+          onContextMenu={(e) => {
+            const rowOriginal = row.original;
             e.preventDefault();
             e.stopPropagation();
-            handleRowRightClick(e, rowOriginal.id, rowOriginal.order)}}
+            handleRowRightClick(e, rowOriginal.id, rowOriginal.order);
+          }}
         >
           {row.getVisibleCells().map((cell) => (
-            <td 
-              key={cell.id} 
+            <td
+              key={cell.id}
               className="h-full border-r p-0 align-top"
               style={{ width: cell.column.getSize() }}
             >
@@ -93,7 +96,7 @@ export function TableBody() {
         <td colSpan={columns.length || 1} className="px-4 py-2 text-center">
           <button
             onClick={() => handleAddRow(rows.length + 1)}
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
+            className="rounded bg-green-500 px-4 py-2 text-white transition hover:bg-green-600"
           >
             + Add Row
           </button>

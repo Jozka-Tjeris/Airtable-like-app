@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { api as trpc } from "~/trpc/react";
 
-export function useBaseMutations(){
+export function useBaseMutations() {
   const utils = trpc.useUtils();
   const router = useRouter();
 
@@ -38,18 +38,14 @@ export function useBaseMutations(){
       const previousBase = utils.base.getBaseById.getData({ baseId });
 
       // Optimistically update dashboard list
-      utils.base.listBases.setData(undefined, (old) =>
-        old?.map((b) =>
-          b.id === baseId ? { ...b, name } : b
-        ) ?? []
+      utils.base.listBases.setData(
+        undefined,
+        (old) => old?.map((b) => (b.id === baseId ? { ...b, name } : b)) ?? [],
       );
 
       // Optimistically update base page
       if (previousBase) {
-        utils.base.getBaseById.setData(
-          { baseId },
-          { ...previousBase, name }
-        );
+        utils.base.getBaseById.setData({ baseId }, { ...previousBase, name });
       }
 
       return { previousBases, previousBase };
@@ -63,7 +59,7 @@ export function useBaseMutations(){
       if (ctx.previousBase) {
         utils.base.getBaseById.setData(
           { baseId: vars.baseId },
-          ctx.previousBase
+          ctx.previousBase,
         );
       }
     },
@@ -87,8 +83,8 @@ export function useBaseMutations(){
 
       // Optimistically remove from dashboard
       utils.base.listBases.setData(
-        undefined, (old) => 
-        old?.filter(b => b.id !== baseId) ?? []
+        undefined,
+        (old) => old?.filter((b) => b.id !== baseId) ?? [],
       );
 
       return { previousBases };
@@ -106,17 +102,26 @@ export function useBaseMutations(){
     },
   });
 
-  const handleCreateBase = useCallback((name: string) => {
-    return createBaseMutation.mutateAsync({ name });
-  }, [createBaseMutation]);
+  const handleCreateBase = useCallback(
+    (name: string) => {
+      return createBaseMutation.mutateAsync({ name });
+    },
+    [createBaseMutation],
+  );
 
-  const handleRenameBase = useCallback((baseId: string, name: string) => {
-    return renameBaseMutation.mutate({ baseId, name });
-  }, [renameBaseMutation]);
+  const handleRenameBase = useCallback(
+    (baseId: string, name: string) => {
+      return renameBaseMutation.mutate({ baseId, name });
+    },
+    [renameBaseMutation],
+  );
 
-  const handleDeleteBase = useCallback((baseId: string) => {
-    return deleteBaseMutation.mutate({ baseId });
-  }, [deleteBaseMutation]);
+  const handleDeleteBase = useCallback(
+    (baseId: string) => {
+      return deleteBaseMutation.mutate({ baseId });
+    },
+    [deleteBaseMutation],
+  );
 
   return {
     handleCreateBase,
