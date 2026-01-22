@@ -43,7 +43,7 @@ export function TopBar({ baseId }: TopBarProps) {
           </div>
         </div>
         <span
-          className="flex h-full flex-1 items-center px-2"
+          className="flex h-full flex-1 items-center px-2 select-none"
           onDoubleClick={() => {
             const newName = prompt("Set new name for base:");
             if (newName === null) return;
