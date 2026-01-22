@@ -34,6 +34,9 @@ import type {
 import { TableCell } from "../TableCell";
 import { api as trpc } from "~/trpc/react";
 
+export const ROW_HEIGHT = 40;
+export const BORDER_WIDTH = 1;
+
 export type TableProviderState = {
   rows: TableRow[];
   columns: Column[];
@@ -57,6 +60,7 @@ export type TableProviderState = {
   setHeaderHeight: (height: number) => void;
   getIsStructureStable: () => boolean;
   isNumericalValue: (val: string) => boolean;
+  startVerticalResize: (e: React.MouseEvent) => void;
 };
 
 const TableContext = createContext<TableProviderState | undefined>(undefined);
@@ -112,7 +116,7 @@ export function TableProvider({
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
-  const [headerHeight, setHeaderHeight] = useState(40);
+  const [headerHeight, setHeaderHeight] = useState(ROW_HEIGHT);
 
   const structureMutationInFlightRef = useRef(0);
   const cellRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -164,6 +168,28 @@ export function TableProvider({
       setCells(initialCells);
     }
   }, [initialCells]);
+
+  const startVerticalResize = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      const startY = e.clientY;
+      const startHeight = headerHeight;
+
+      const onMouseMove = (moveEvent: MouseEvent) => {
+        const delta = moveEvent.clientY - startY;
+        setHeaderHeight(Math.max(ROW_HEIGHT, startHeight + delta));
+      };
+
+      const onMouseUp = () => {
+        window.removeEventListener("mousemove", onMouseMove);
+        window.removeEventListener("mouseup", onMouseUp);
+      };
+
+      window.addEventListener("mousemove", onMouseMove);
+      window.addEventListener("mouseup", onMouseUp);
+    },
+    [headerHeight, setHeaderHeight],
+  );
 
   const updateCellsMutation = trpc.cell.updateCells.useMutation();
 
@@ -435,6 +461,7 @@ export function TableProvider({
       columnSizing,
       headerHeight,
       setHeaderHeight,
+      startVerticalResize,
     }),
     [
       rows,
@@ -456,6 +483,7 @@ export function TableProvider({
       handleRenameColumn,
       getIsStructureStable,
       isNumericalValue,
+      startVerticalResize,
     ],
   );
 

@@ -17,33 +17,11 @@ export function TableHeader() {
     handleDeleteColumn,
     handleRenameColumn,
     headerHeight,
-    setHeaderHeight,
+    startVerticalResize,
     isNumericalValue,
   } = useTableController();
 
   const headerGroups = table.getHeaderGroups();
-
-  const startVerticalResize = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      const startY = e.clientY;
-      const startHeight = headerHeight;
-
-      const onMouseMove = (moveEvent: MouseEvent) => {
-        const delta = moveEvent.clientY - startY;
-        setHeaderHeight(Math.max(32, startHeight + delta));
-      };
-
-      const onMouseUp = () => {
-        window.removeEventListener("mousemove", onMouseMove);
-        window.removeEventListener("mouseup", onMouseUp);
-      };
-
-      window.addEventListener("mousemove", onMouseMove);
-      window.addEventListener("mouseup", onMouseUp);
-    },
-    [headerHeight, setHeaderHeight],
-  );
 
   const onAddColumnClick = useCallback(() => {
     const name = prompt("Enter column name:", `Column ${columns.length + 1}`);
@@ -76,7 +54,7 @@ export function TableHeader() {
 
   return (
     <thead className="border-b bg-gray-50 text-[11px] tracking-wider text-gray-500 uppercase">
-      {headerGroups.length > 0 ? (
+      {columns.length > 0 ? (
         headerGroups.map((group) => (
           <tr key={group.id} style={{ height: headerHeight }}>
             {group.headers.map((header) => {
@@ -188,17 +166,26 @@ export function TableHeader() {
         ))
       ) : (
         // No columns — single row with centered Add Column button
-        <tr style={{ height: headerHeight }}>
+        <tr>
+          {/* Don't add flex to th and keep height in th, otherwise it introduces fractional pixels */}
           <th
             colSpan={1} // could span more if you want full width dynamically
-            className="text-center py-4"
+            className="w-90"
+            style={{ height: headerHeight }}
           >
-            <button
-              onClick={onAddColumnClick}
-              className="inline-flex h-8 w-8 items-center justify-center rounded bg-green-500 text-lg leading-none text-white shadow-sm transition hover:bg-green-600"
-            >
-              +
-            </button>
+            <div className="flex h-full w-full flex-row items-center">
+              <span className="flex-1 pl-2 pr-2 text-gray-500">
+                No columns yet — add one to display rows
+              </span>
+              <div className="flex items-center pr-4">
+                <button
+                  onClick={onAddColumnClick}
+                  className="inline-flex h-6 w-6 items-center justify-center rounded bg-green-500 text-lg leading-none text-white shadow-sm transition hover:bg-green-600"
+                >
+                  +
+                </button>
+              </div>
+            </div>
           </th>
         </tr>
       )}

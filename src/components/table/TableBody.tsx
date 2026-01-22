@@ -1,23 +1,26 @@
 import React, { useCallback } from "react";
 import { flexRender } from "@tanstack/react-table";
-import { useTableController } from "@/components/table/controller/TableProvider";
+import { useTableController, ROW_HEIGHT } from "@/components/table/controller/TableProvider";
 
 /**
  * Notice: We've removed registerRef and activeCell from props
  * as they are now managed via the table instance or Context.
  */
 export function TableBody() {
-  const { table, rows, columns, handleAddRow, handleDeleteRow } =
+  const { table, rows, columns, handleDeleteRow } =
     useTableController();
 
+  const hasRows = rows.length > 0;
+  const hasColumns = columns.length > 0;
+
   const handleRowRightClick = useCallback(
-    (e: React.MouseEvent, rowId: string, rowOrder: number) => {
+    (e: React.MouseEvent, rowId: string, rowPosition: number) => {
       e.preventDefault();
       // Use e.stopPropagation to prevent triggering any cell selection logic
       e.stopPropagation();
 
       const confirmed = window.confirm(
-        `Delete row "${rowOrder + 1}"?\n\nThis will remove all its cell values.`,
+        `Delete row "${rowPosition}"?\n\nThis will remove all its cell values.`,
       );
 
       if (confirmed) {
@@ -30,32 +33,38 @@ export function TableBody() {
   // -----------------------------
   // Empty State logic
   // -----------------------------
-  if (rows.length === 0) {
+  if (!hasRows && !hasColumns) {
     return (
       <tbody>
         <tr>
           <td
-            colSpan={columns.length || 1}
-            className="px-4 py-2 text-center text-gray-500"
+            colSpan={Math.max(columns.length, 1)}
+            className="italic px-4 text-center text-gray-500"
+            style={{ height: ROW_HEIGHT, minHeight: ROW_HEIGHT }}
           >
             No rows to display
           </td>
         </tr>
-        {columns.length > 0 && (
-          <tr className="bg-gray-50">
-            <td
-              colSpan={columns.length || 1}
-              className="h-full px-4 py-2 text-center"
-            >
-              <button
-                onClick={() => handleAddRow(rows.length + 1)}
-                className="rounded bg-green-500 px-4 py-2 text-white transition hover:bg-green-600"
-              >
-                + Add Row
-              </button>
-            </td>
-          </tr>
-        )}
+      </tbody>
+    );
+  }
+
+  if (hasRows && !hasColumns) {
+    return (
+      <tbody>
+        <tr>
+          <td
+            colSpan={1}
+            className="text-center text-gray-500 italic align-middle"
+            style={{ height: 2*ROW_HEIGHT }}
+          >
+            <div className="flex h-full items-center justify-center">
+              {rows.length} row{rows.length > 1 ? "s" : ""} hidden.
+              <br />
+              Add a column to view data.
+            </div>
+          </td>
+        </tr>
       </tbody>
     );
   }
@@ -65,22 +74,23 @@ export function TableBody() {
   // -----------------------------
   return (
     <tbody>
-      {table.getRowModel().rows.map((row) => (
+      {table.getRowModel().rows.map((row, idx) => (
         <tr
           key={row.id}
-          className="h-10 border-b last:border-0 hover:bg-[#f0f0f0]"
+          className={`border-b hover:bg-[#f0f0f0]`}
           onContextMenu={(e) => {
             const rowOriginal = row.original;
             e.preventDefault();
             e.stopPropagation();
-            handleRowRightClick(e, rowOriginal.id, rowOriginal.order);
+            handleRowRightClick(e, rowOriginal.id, idx + 1);
           }}
         >
           {row.getVisibleCells().map((cell) => (
             <td
               key={cell.id}
-              className="h-full border-r p-0 align-top"
-              style={{ width: cell.column.getSize() }}
+              className="h-full border-r border-b p-0 align-top"
+              // Tailwind cannot generate dynamic classes, must use inline styles
+              style={{ width: cell.column.getSize(), height: ROW_HEIGHT }}
             >
               {/* This is where the magic happens. flexRender calls the 
                   cell renderer defined in your TableProvider.
@@ -90,17 +100,13 @@ export function TableBody() {
           ))}
         </tr>
       ))}
-
-      {/* Footer Add Row button */}
-      <tr className="bg-gray-50">
-        <td colSpan={columns.length || 1} className="px-4 py-2 text-center">
-          <button
-            onClick={() => handleAddRow(rows.length + 1)}
-            className="rounded bg-green-500 px-4 py-2 text-white transition hover:bg-green-600"
-          >
-            + Add Row
-          </button>
-        </td>
+      <tr>
+        {/* Filler cells for padding */}
+        {columns.map((_, idx) => (
+          <td key={idx} className="h-full border-r"
+            style={{ height: ROW_HEIGHT }}
+          />
+        ))}
       </tr>
     </tbody>
   );
