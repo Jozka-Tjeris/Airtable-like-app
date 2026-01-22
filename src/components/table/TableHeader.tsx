@@ -75,14 +75,18 @@ export function TableHeader() {
                   style={{
                     width: header.getSize(),
                     //Add min and max width to prevent shrinking and stretching respectively
-                    minWidth: "180px",
-                    maxWidth: header.getSize(),
+                    minWidth:header.column.columnDef.minSize,
+                    maxWidth: header.column.columnDef.maxSize,
                     height: headerHeight,
                     position: "sticky",
                     top: 0,
                     zIndex: 30,
                     background: "#f9fafb",
-                    boxShadow: "inset 0 -1px 0 0 #d1d5db"
+                    /* The first shadow is 1px solid gray at the very bottom.
+                      The second shadow is a solid "mask" that prevents anything 
+                      underneath from bleeding through the background. (Targets bottom and right areas)
+                    */
+                    boxShadow: "inset 0 -1px 0 0 #d1d5db, 0 -0.5px 0 0.5px #d1d5db"
                   }}
                   className={`border-r px-3 py-2 font-medium transition-colors select-none last:border-r-0 ${
                     isSorted ? "bg-blue-50/50" : ""

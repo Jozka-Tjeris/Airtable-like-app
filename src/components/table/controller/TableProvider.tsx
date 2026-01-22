@@ -189,6 +189,8 @@ export function TableProvider({
         accessorFn: (row) => cells[`${row.internalId ?? row.id}:${colId}`] ?? "",
         header: col.label,
         size: col.width ?? 150,
+        minSize: 100,
+        maxSize: 800,
         meta: { columnType: col.columnType ?? "text", dbId: col.id },
         // Use the stable renderer function
         cell: CellRenderer,
