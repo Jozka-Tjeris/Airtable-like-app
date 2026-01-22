@@ -10,7 +10,7 @@ interface StickyProps {
 export const StickyColumnsBar = memo(function StickyColumnsBar({
   scrollRef,
 }: StickyProps) {
-  const { table, headerHeight, columns, rows, startVerticalResize, handleAddRow } = useTableController();
+  const { table, headerHeight, columns, rows, startVerticalResize, handleAddRow, columnsRef } = useTableController();
   const hasColumns = columns.length > 0;
 
   // Rows exactly as rendered in the main table
@@ -77,7 +77,7 @@ export const StickyColumnsBar = memo(function StickyColumnsBar({
               }}
             >
               <button
-                onClick={() => {handleAddRow(rows.length + 1)}}
+                onClick={() => {handleAddRow(rows.length + 1, columnsRef)}}
                 disabled={!hasColumns}
                 className={`inline-flex h-6 w-6 items-center justify-center rounded text-lg leading-none text-white shadow-sm transition 
                   ${hasColumns ? 

@@ -35,6 +35,7 @@ import { TableCell } from "../TableCell";
 import { api as trpc } from "~/trpc/react";
 import { useTableLayout } from "./useTableLayout";
 import { useTableInteractions } from "./useTableInteractions";
+import { useTableStructure } from "./useTableStructure";
 
 export const ROW_HEIGHT = 40;
 export const BORDER_WIDTH = 1;
@@ -49,7 +50,7 @@ export type TableProviderState = {
   setGlobalSearch: (search: string) => void;
   registerRef: (id: string, el: HTMLDivElement | null) => void;
   updateCell: (rowId: string, columnId: string, value: CellValue) => void;
-  handleAddRow: (orderNum: number) => void;
+  handleAddRow: (orderNum: number, columnsRef: React.RefObject<Column[]>) => void;
   handleDeleteRow: (rowId: string) => void;
   handleAddColumn: (orderNum: number, label: string, type: ColumnType) => void;
   handleDeleteColumn: (columnId: string) => void;
@@ -63,6 +64,7 @@ export type TableProviderState = {
   getIsStructureStable: () => boolean;
   isNumericalValue: (val: string) => boolean;
   startVerticalResize: (e: React.MouseEvent) => void;
+  columnsRef: React.RefObject<Column[]>;
 };
 
 const TableContext = createContext<TableProviderState | undefined>(undefined);
@@ -114,21 +116,6 @@ export function TableProvider({
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
-  const structureMutationInFlightRef = useRef(0);
-
-  const beginStructureMutation = () => {
-    structureMutationInFlightRef.current += 1;
-  };
-
-  const endStructureMutation = () => {
-    structureMutationInFlightRef.current -= 1;
-  };
-
-  const getIsStructureStable = useCallback(
-    () => structureMutationInFlightRef.current === 0,
-    [],
-  );
-
   useEffect(() => {
     if (initialRows.length > 0) {
       setRows(initialRows.map((r) => ({ ...r, internalId: r.internalId ?? r.id })));
@@ -151,45 +138,18 @@ export function TableProvider({
 
   const { activeCell, setActiveCell, registerRef, updateCell, isNumericalValue, pendingCellUpdatesRef, cellRefs } = useTableInteractions(null, tableId, rowsRef, columnsRef);
 
+  const {
+    handleAddRow,
+    handleAddColumn,
+    handleDeleteRow,
+    handleDeleteColumn,
+    handleRenameColumn,
+    getIsStructureStable,
+    structureMutationInFlightRef
+  } = useTableStructure(tableId, setRows, setColumns);
+
+
   const updateCellsMutation = trpc.cell.updateCells.useMutation();
-
-  const addRowMutation = trpc.row.addRow.useMutation({
-    onMutate: () => beginStructureMutation(),
-    onSuccess: ({ row, optimisticId }) => {
-      setRows((prev) =>
-        prev.map((r) =>
-          r.internalId === optimisticId || r.id === optimisticId
-            ? { ...r, id: row.id, optimistic: false } // Keep existing object ref where possible
-            : r,
-        ),
-      );
-    },
-    onError: (_, { optimisticId }) => {
-      setRows((prev) => prev.filter((r) => r.id !== optimisticId));
-    },
-    onSettled: () => endStructureMutation(),
-  });
-
-  const addColumnMutation = trpc.column.addColumn.useMutation({
-    onMutate: () => beginStructureMutation(),
-    onSuccess: ({ column, optimisticId }) => {
-      setColumns((prev) =>
-        prev.map((c) =>
-          c.id === optimisticId || c.internalId === optimisticId
-            ? { ...c, id: column.id, optimistic: false, label: column.name, order: column.order }
-            : c,
-        ),
-      );
-    },
-    onError: (_, { optimisticId }) => {
-      setColumns((prev) => prev.filter((c) => c.id !== optimisticId));
-    },
-    onSettled: () => endStructureMutation(),
-  });
-
-  const deleteRowMutation = trpc.row.deleteRow.useMutation();
-  const deleteColumnMutation = trpc.column.deleteColumn.useMutation();
-  const renameColumnMutation = trpc.column.renameColumn.useMutation();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -204,91 +164,6 @@ export function TableProvider({
 
     return () => clearInterval(interval);
   }, [updateCellsMutation]);
-
-  const handleAddRow = useCallback(
-    (orderNum: number) => {
-      if (columnsRef.current.length === 0) return;
-      const optimisticId = `optimistic-row-${crypto.randomUUID()}`;
-      setRows((prev) => [
-        ...prev,
-        {
-          id: optimisticId,
-          internalId: optimisticId,
-          order: orderNum,
-          optimistic: true
-        },
-      ]);
-      addRowMutation.mutate({ tableId, orderNum, optimisticId });
-    },
-    [addRowMutation, tableId],
-  );
-
-  const handleAddColumn = useCallback(
-    (orderNum: number, label: string, type: ColumnType) => {
-      const optimisticId = `optimistic-col-${crypto.randomUUID()}`;
-      setColumns((prev) => [
-        ...prev,
-        {
-          id: optimisticId,
-          internalId: optimisticId,
-          label,
-          order: orderNum,
-          columnType: type,
-          optimistic: true,
-        },
-      ]);
-      addColumnMutation.mutate({
-        tableId,
-        label,
-        orderNum,
-        type,
-        optimisticId,
-      });
-    },
-    [addColumnMutation, tableId],
-  );
-
-  const handleDeleteRow = useCallback(
-    (rowId: string) => {
-      beginStructureMutation();
-      setRows((prev) =>
-        prev.filter((r) => r.id !== rowId && r.internalId !== rowId),
-      );
-      deleteRowMutation.mutate(
-        { tableId, rowId },
-        { onSettled: endStructureMutation },
-      );
-    },
-    [deleteRowMutation, tableId],
-  );
-
-  const handleDeleteColumn = useCallback(
-    (columnId: string) => {
-      beginStructureMutation();
-      setColumns((prev) =>
-        prev.filter((c) => c.id !== columnId && c.internalId !== columnId),
-      );
-      deleteColumnMutation.mutate(
-        { tableId, columnId },
-        { onSettled: endStructureMutation },
-      );
-    },
-    [deleteColumnMutation, tableId],
-  );
-
-  const handleRenameColumn = useCallback(
-    (columnId: string, newLabel: string) => {
-      setColumns((prev) =>
-        prev.map((c) =>
-          c.id === columnId || c.internalId === columnId
-            ? { ...c, label: newLabel }
-            : c,
-        ),
-      );
-      renameColumnMutation.mutate({ tableId, columnId, newLabel });
-    },
-    [renameColumnMutation, tableId],
-  );
 
   // STABLE DATA: We return original row references
   const tableData = useMemo(() => {
@@ -402,6 +277,7 @@ export function TableProvider({
       headerHeight,
       setHeaderHeight,
       startVerticalResize,
+      columnsRef,
     }),
     [
       rows,
@@ -424,6 +300,7 @@ export function TableProvider({
       getIsStructureStable,
       isNumericalValue,
       startVerticalResize,
+      columnsRef,
     ],
   );
 
