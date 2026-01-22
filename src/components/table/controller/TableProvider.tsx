@@ -34,6 +34,7 @@ import type {
 import { TableCell } from "../TableCell";
 import { api as trpc } from "~/trpc/react";
 import { useTableLayout } from "./useTableLayout";
+import { useTableInteractions } from "./useTableInteractions";
 
 export const ROW_HEIGHT = 40;
 export const BORDER_WIDTH = 1;
@@ -108,25 +109,12 @@ export function TableProvider({
   useEffect(() => { rowsRef.current = rows; }, [rows]);
   useEffect(() => { columnsRef.current = columns; }, [columns]);
 
-  const [activeCell, setActiveCell] = useState<{
-    rowId: string;
-    columnId: string;
-  } | null>(null);
   const [globalSearch, setGlobalSearch] = useState<string>(initialGlobalSearch);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   const structureMutationInFlightRef = useRef(0);
-  const cellRefs = useRef<Record<string, HTMLDivElement | null>>({});
-
-  const isNumericalValue = useCallback((val: string) => {
-    return /^-?\d*\.?\d*$/.test(val);
-  }, []);
-
-  const registerRef = useCallback((id: string, el: HTMLDivElement | null) => {
-    cellRefs.current[id] = el;
-  }, []);
 
   const beginStructureMutation = () => {
     structureMutationInFlightRef.current += 1;
@@ -140,15 +128,6 @@ export function TableProvider({
     () => structureMutationInFlightRef.current === 0,
     [],
   );
-
-  const pendingCellUpdatesRef = useRef<
-    Array<{
-      rowId: string;
-      columnId: string;
-      value: CellValue;
-      tableId: string;
-    }>
-  >([]);
 
   useEffect(() => {
     if (initialRows.length > 0) {
@@ -169,6 +148,8 @@ export function TableProvider({
   }, [initialCells]);
 
   const { ROW_HEIGHT, headerHeight, setHeaderHeight, startVerticalResize, columnSizing, setColumnSizing } = useTableLayout()
+
+  const { activeCell, setActiveCell, registerRef, updateCell, isNumericalValue, pendingCellUpdatesRef, cellRefs } = useTableInteractions(null, tableId, rowsRef, columnsRef);
 
   const updateCellsMutation = trpc.cell.updateCells.useMutation();
 
@@ -209,26 +190,6 @@ export function TableProvider({
   const deleteRowMutation = trpc.row.deleteRow.useMutation();
   const deleteColumnMutation = trpc.column.deleteColumn.useMutation();
   const renameColumnMutation = trpc.column.renameColumn.useMutation();
-
-  const updateCell = useCallback(
-    (stableRowId: string, stableColumnId: string, value: CellValue) => {
-      const key = `${stableRowId}:${stableColumnId}`;
-      setCells((prev) => ({ ...prev, [key]: value }));
-      
-      const actualRow = rowsRef.current.find((r) => r.internalId === stableRowId || r.id === stableRowId);
-      const actualCol = columnsRef.current.find((c) => c.internalId === stableColumnId || c.id === stableColumnId);
-      
-      if (!actualCol) return;
-
-      pendingCellUpdatesRef.current.push({
-        rowId: actualRow?.id ?? stableRowId,
-        columnId: actualCol?.id ?? stableColumnId,
-        value: String(value),
-        tableId: tableId,
-      });
-    },
-    [tableId],
-  );
 
   useEffect(() => {
     const interval = setInterval(() => {
