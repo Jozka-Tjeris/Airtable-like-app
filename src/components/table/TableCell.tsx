@@ -226,7 +226,7 @@ export const TableCell = memo(function TableCell({
       {/* Display value when not editing */}
       {!isEditing && (
         <span className="pointer-events-none absolute inset-0 flex items-center truncate px-2 select-none">
-          {value ?? ""}
+          {localValue ?? ""}
         </span>
       )}
 
