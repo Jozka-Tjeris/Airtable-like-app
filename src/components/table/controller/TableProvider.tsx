@@ -1,44 +1,20 @@
 "use client";
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useMemo,
-  type ReactNode,
-  useRef,
-  useEffect,
+import React, { createContext, useContext, useState, useCallback, useMemo, 
+  type ReactNode, useRef, useEffect 
 } from "react";
-import {
-  useReactTable,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  type ColumnDef,
-  type SortingState,
-  type ColumnFiltersState,
-  type VisibilityState,
-  type ColumnSizingState,
-  type Table,
-  type CellContext,
+import { useReactTable, getCoreRowModel, getFilteredRowModel, getSortedRowModel,
+  type ColumnDef, type SortingState, type ColumnFiltersState, type VisibilityState,
+  type ColumnSizingState, type Table, type CellContext 
 } from "@tanstack/react-table";
 import type {
-  Column,
-  Row,
-  CellMap,
-  CellValue,
-  TableRow,
-  ColumnType,
+  Column, Row, CellMap, CellValue,TableRow, ColumnType 
 } from "./tableTypes";
 import { TableCell } from "../TableCell";
 import { api as trpc } from "~/trpc/react";
 import { useTableLayout } from "./useTableLayout";
 import { useTableInteractions } from "./useTableInteractions";
 import { useTableStructure } from "./useTableStructure";
-
-export const ROW_HEIGHT = 40;
-export const BORDER_WIDTH = 1;
 
 export type TableProviderState = {
   rows: TableRow[];
@@ -50,7 +26,7 @@ export type TableProviderState = {
   setGlobalSearch: (search: string) => void;
   registerRef: (id: string, el: HTMLDivElement | null) => void;
   updateCell: (rowId: string, columnId: string, value: CellValue) => void;
-  handleAddRow: (orderNum: number, columnsRef: React.RefObject<Column[]>) => void;
+  handleAddRow: (orderNum: number) => void;
   handleDeleteRow: (rowId: string) => void;
   handleAddColumn: (orderNum: number, label: string, type: ColumnType) => void;
   handleDeleteColumn: (columnId: string) => void;
@@ -64,7 +40,7 @@ export type TableProviderState = {
   getIsStructureStable: () => boolean;
   isNumericalValue: (val: string) => boolean;
   startVerticalResize: (e: React.MouseEvent) => void;
-  columnsRef: React.RefObject<Column[]>;
+  ROW_HEIGHT: number;
 };
 
 const TableContext = createContext<TableProviderState | undefined>(undefined);
@@ -134,20 +110,18 @@ export function TableProvider({
     }
   }, [initialCells]);
 
-  const { ROW_HEIGHT, headerHeight, setHeaderHeight, startVerticalResize, columnSizing, setColumnSizing } = useTableLayout()
+  const { ROW_HEIGHT, headerHeight, columnSizing, 
+    setHeaderHeight, startVerticalResize, setColumnSizing 
+  } = useTableLayout()
 
-  const { activeCell, setActiveCell, registerRef, updateCell, isNumericalValue, pendingCellUpdatesRef, cellRefs } = useTableInteractions(null, tableId, rowsRef, columnsRef);
+  const { activeCell, pendingCellUpdatesRef, cellRefs, 
+    setActiveCell, registerRef, updateCell, isNumericalValue 
+  } = useTableInteractions(null, tableId, rowsRef, columnsRef);
 
-  const {
-    handleAddRow,
-    handleAddColumn,
-    handleDeleteRow,
-    handleDeleteColumn,
-    handleRenameColumn,
-    getIsStructureStable,
-    structureMutationInFlightRef
-  } = useTableStructure(tableId, setRows, setColumns);
-
+  const { handleAddRow, handleDeleteRow, 
+    handleAddColumn, handleDeleteColumn, handleRenameColumn, 
+    getIsStructureStable, structureMutationInFlightRef 
+  } = useTableStructure(tableId, setRows, setColumns, columnsRef);
 
   const updateCellsMutation = trpc.cell.updateCells.useMutation();
 
@@ -163,7 +137,7 @@ export function TableProvider({
     }, 300); // every 300ms, adjust as needed
 
     return () => clearInterval(interval);
-  }, [updateCellsMutation]);
+  }, [updateCellsMutation, pendingCellUpdatesRef, structureMutationInFlightRef]);
 
   // STABLE DATA: We return original row references
   const tableData = useMemo(() => {
@@ -250,7 +224,7 @@ export function TableProvider({
     ) {
       el.focus();
     }
-  }, [activeCell]);
+  }, [activeCell, cellRefs]);
 
   const contextValue = useMemo(
     () => ({
@@ -277,7 +251,7 @@ export function TableProvider({
       headerHeight,
       setHeaderHeight,
       startVerticalResize,
-      columnsRef,
+      ROW_HEIGHT,
     }),
     [
       rows,
@@ -300,7 +274,9 @@ export function TableProvider({
       getIsStructureStable,
       isNumericalValue,
       startVerticalResize,
-      columnsRef,
+      setActiveCell,
+      setHeaderHeight,
+      ROW_HEIGHT,
     ],
   );
 

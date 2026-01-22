@@ -1,13 +1,13 @@
 import React, { useCallback } from "react";
 import { flexRender } from "@tanstack/react-table";
-import { useTableController, ROW_HEIGHT } from "@/components/table/controller/TableProvider";
+import { useTableController } from "@/components/table/controller/TableProvider";
 
 /**
  * Notice: We've removed registerRef and activeCell from props
  * as they are now managed via the table instance or Context.
  */
 export function TableBody() {
-  const { table, rows, columns, handleDeleteRow } =
+  const { table, rows, columns, handleDeleteRow, ROW_HEIGHT } =
     useTableController();
 
   const hasRows = rows.length > 0;

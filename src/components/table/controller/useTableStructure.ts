@@ -5,7 +5,8 @@ import { api as trpc } from "~/trpc/react";
 export function useTableStructure(
   tableId: string,
   setRows: React.Dispatch<React.SetStateAction<TableRow[]>>,
-  setColumns: React.Dispatch<React.SetStateAction<Column[]>>
+  setColumns: React.Dispatch<React.SetStateAction<Column[]>>,
+  columnsRef: React.RefObject<Column[]>
 ) {
   const structureMutationInFlightRef = useRef(0);
 
@@ -61,7 +62,7 @@ export function useTableStructure(
   const renameColumnMutation = trpc.column.renameColumn.useMutation();
 
   const handleAddRow = useCallback(
-    (orderNum: number, columnsRef: React.RefObject<Column[]>) => {
+    (orderNum: number) => {
       if (columnsRef.current.length === 0) return;
       const optimisticId = `optimistic-row-${crypto.randomUUID()}`;
       setRows((prev) => [
@@ -75,7 +76,7 @@ export function useTableStructure(
       ]);
       addRowMutation.mutate({ tableId, orderNum, optimisticId });
     },
-    [addRowMutation, tableId, setRows]
+    [addRowMutation, tableId, setRows, columnsRef]
   );
 
   const handleAddColumn = useCallback(
