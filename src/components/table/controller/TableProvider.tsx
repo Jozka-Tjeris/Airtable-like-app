@@ -114,8 +114,8 @@ export function TableProvider({
     setHeaderHeight, startVerticalResize, setColumnSizing 
   } = useTableLayout()
 
-  const { activeCell, pendingCellUpdatesRef, cellRefs, 
-    setActiveCell, registerRef, updateCell, isNumericalValue 
+  const { activeCell, pendingCellUpdatesRef, cellRefs, updateCellsMutation,
+    setActiveCell, registerRef, updateCell, isNumericalValue,
   } = useTableInteractions(null, tableId, rowsRef, columnsRef);
 
   const { handleAddRow, handleDeleteRow, 
@@ -123,8 +123,7 @@ export function TableProvider({
     getIsStructureStable, structureMutationInFlightRef 
   } = useTableStructure(tableId, setRows, setColumns, columnsRef);
 
-  const updateCellsMutation = trpc.cell.updateCells.useMutation();
-
+  //Flush cell updates after preset interval duration
   useEffect(() => {
     const interval = setInterval(() => {
       if (structureMutationInFlightRef.current > 0) return;

@@ -76,6 +76,7 @@ export function useTableInteractions(
     registerRef,
     updateCell,
     isNumericalValue,
+    updateCellsMutation,
     pendingCellUpdatesRef,
     cellRefs
   };
