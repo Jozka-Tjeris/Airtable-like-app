@@ -33,9 +33,13 @@ export const StickyColumnsBar = memo(function StickyColumnsBar({
               style={{
                 height: headerHeight,
                 boxSizing: "border-box",
-                position: "relative",
+                position: "sticky",
+                top: 0,
+                zIndex: 30,
+                background: "#e0e0e0",
+                boxShadow: "inset 0 -1px 0 0 #d1d5db"
               }}
-              className="border-b bg-gray-100"
+              className="bg-gray-100"
             >
               <div
                 onMouseDown={startVerticalResize}

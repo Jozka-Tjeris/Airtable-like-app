@@ -88,7 +88,7 @@ export function TableBody() {
           {row.getVisibleCells().map((cell) => (
             <td
               key={cell.id}
-              className="h-full border-r border-b p-0 align-top"
+              className="h-full border-r p-0 align-top"
               // Tailwind cannot generate dynamic classes, must use inline styles
               style={{ width: cell.column.getSize(), height: ROW_HEIGHT }}
             >

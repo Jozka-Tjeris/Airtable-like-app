@@ -5,22 +5,17 @@ import { TableHeader } from "./TableHeader";
 import { TableBody } from "./TableBody";
 
 export function BaseTable() {
-  const { sorting } = useTableController();
+  const { table, sorting } = useTableController();
 
   return (
-    /* The parent (MainContent) handles the vertical scroll.
-       This div only handles the horizontal scroll for when 
-       the table is wider than the screen.
-    */
-    <div className="w-max overflow-x-auto">
-      <table
-        className="w-max min-w-full table-fixed border-collapse"
-        style={{ width: "max-content" }}
-      >
-        {/* We keep the key on sorting so the header re-renders instantly */}
-        <TableHeader key={JSON.stringify(sorting)} />
-        <TableBody />
-      </table>
-    </div>
+    <table
+      // Table is fixed to prevent stretching, width uses TanStack's internal total width
+      className="w-max table-fixed border-collapse"
+      style={{ width: table.getTotalSize() }}
+    >
+      {/* We keep the key on sorting so the header re-renders instantly */}
+      <TableHeader key={JSON.stringify(sorting)} />
+      <TableBody />
+    </table>
   );
 }

@@ -52,7 +52,8 @@ export function MainTableContent() {
       <div
         ref={mainScrollRef}
         onScroll={handleScroll}
-        className="min-w-0 flex-1 overflow-auto"
+        // overscroll-none prevents overscrolling, no-scrollbar hides scrollbar
+        className="min-w-0 flex-1 overflow-auto overscroll-none no-scrollbar"
       >
         <BaseTable />
       </div>

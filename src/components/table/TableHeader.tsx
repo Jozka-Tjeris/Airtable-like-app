@@ -53,7 +53,7 @@ export function TableHeader() {
   );
 
   return (
-    <thead className="border-b bg-gray-50 text-[11px] tracking-wider text-gray-500 uppercase">
+    <thead className="bg-gray-50 text-[11px] tracking-wider text-gray-500 uppercase">
       {columns.length > 0 ? (
         headerGroups.map((group) => (
           <tr key={group.id} style={{ height: headerHeight }}>
@@ -74,8 +74,15 @@ export function TableHeader() {
                   key={header.id}
                   style={{
                     width: header.getSize(),
+                    //Add min and max width to prevent shrinking and stretching respectively
+                    minWidth: "180px",
+                    maxWidth: header.getSize(),
                     height: headerHeight,
-                    position: "relative",
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 30,
+                    background: "#f9fafb",
+                    boxShadow: "inset 0 -1px 0 0 #d1d5db"
                   }}
                   className={`border-r px-3 py-2 font-medium transition-colors select-none last:border-r-0 ${
                     isSorted ? "bg-blue-50/50" : ""
@@ -153,7 +160,14 @@ export function TableHeader() {
             {/* Add Column Button */}
             <th
               className="border-l bg-gray-50 p-0 text-center"
-              style={{ width: 50 }}
+              style={{ 
+                width: 50,
+                position: "sticky",
+                top: 0,
+                zIndex: 30,
+                background: "#f9fafb",
+                boxShadow: "inset 0 -1px 0 0 #d1d5db"
+              }}
             >
               <button
                 onClick={onAddColumnClick}
@@ -173,7 +187,7 @@ export function TableHeader() {
             className="w-90"
             style={{ height: headerHeight }}
           >
-            <div className="flex h-full w-full flex-row items-center">
+            <div className="flex h-full w-full flex-row items-center border-b border-gray-300">
               <span className="flex-1 pl-2 pr-2 text-gray-500">
                 No columns yet — add one to display rows
               </span>
