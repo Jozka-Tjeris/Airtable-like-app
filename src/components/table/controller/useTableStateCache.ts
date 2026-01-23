@@ -15,6 +15,7 @@ export type CachedTableState = {
   columnVisibility: VisibilityState;
   columnSizing: ColumnSizingState;
   columnPinning: ColumnPinningState;
+  globalSearch: string;
 };
 
 const VERSION = 1;
@@ -39,7 +40,8 @@ export function normalizeState(
     columnPinning: {
       left: cached.columnPinning.left?.filter(id => validColumnIds.has(id)) ?? [],
       right: cached.columnPinning.right?.filter(id => validColumnIds.has(id)) ?? [],
-    }
+    },
+    globalSearch: cached.globalSearch,
   };
 }
 

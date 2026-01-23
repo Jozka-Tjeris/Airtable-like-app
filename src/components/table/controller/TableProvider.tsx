@@ -67,7 +67,7 @@ type TableProviderProps = {
   initialRows: Row[];
   initialColumns: Column[];
   initialCells: CellMap;
-  initialGlobalSearch?: string;
+  initialGlobalSearch: string;
 };
 
 export function TableProvider({
@@ -76,7 +76,7 @@ export function TableProvider({
   initialRows,
   initialColumns,
   initialCells,
-  initialGlobalSearch = "",
+  initialGlobalSearch,
 }: TableProviderProps) {
   const [rows, setRows] = useState<TableRow[]>(() =>
     initialRows.map((r) => ({ ...r, internalId: r.internalId ?? r.id })),
@@ -112,10 +112,11 @@ export function TableProvider({
   useEffect(() => {
     if (!cached) return;
 
-    setSorting(cached.sorting);
-    setColumnFilters(cached.columnFilters);
-    setColumnVisibility(cached.columnVisibility);
-    setColumnPinning(cached.columnPinning);
+    setSorting(cached.sorting ?? []);
+    setColumnFilters(cached.columnFilters ?? []);
+    setColumnVisibility(cached.columnVisibility ?? {});
+    setColumnPinning(cached.columnPinning ?? { left: [], right: [] });
+    setGlobalSearch(cached.globalSearch ?? "");
   }, [cached]);
 
   const pinColumn = useCallback((columnId: string) => {
@@ -246,6 +247,7 @@ export function TableProvider({
         columnVisibility,
         columnSizing,
         columnPinning,
+        globalSearch,
       });
     }, 300);
 
@@ -260,6 +262,7 @@ export function TableProvider({
     columnVisibility,
     columnSizing,
     columnPinning,
+    globalSearch,
     getIsStructureStable,
     save,
   ]);
@@ -282,7 +285,7 @@ export function TableProvider({
   // STABLE DATA: We return original row references
   const tableData = useMemo(() => {
     const sorted = [...rows].sort((a, b) => a.order - b.order);
-    const search = globalSearch.trim().toLowerCase();
+    const search = (globalSearch ?? "").trim().toLowerCase();
     if (!search) return sorted;
 
     return sorted.filter((row) => {
@@ -338,7 +341,7 @@ export function TableProvider({
     });
     // We include cells here so the accessorFn updates, 
     // but because CellRenderer is stable, the TableCell won't unmount.
-  }, [columns, cells, CellRenderer]);
+  }, [columns, cells, CellRenderer, DEFAULT_COL_WIDTH, MIN_COL_WIDTH, MAX_COL_WIDTH]);
 
   const table = useReactTable({
     data: tableData,
