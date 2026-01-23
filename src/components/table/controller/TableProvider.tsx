@@ -181,7 +181,7 @@ export function TableProvider({
 
   const { activeCell, pendingCellUpdatesRef, cellRefs, updateCellsMutation,
     setActiveCell, registerRef, updateCell, isNumericalValue,
-  } = useTableInteractions(null, tableId, rowsRef, columnsRef);
+  } = useTableInteractions(null, tableId, rowsRef, columnsRef, setCells);
 
   const { handleAddRow, handleDeleteRow, 
     handleAddColumn, handleDeleteColumn, handleRenameColumn, 
@@ -305,7 +305,7 @@ export function TableProvider({
       const colId = col.internalId ?? col.id;
       return {
         id: colId,
-        accessorFn: (row) => cells[`${row.internalId ?? row.id}:${colId}`] ?? "",
+        accessorFn: (row) => cells[`${row.internalId ?? row.id}:${colId}`],
         header: col.label,
         size: col.width ?? 180,
         minSize: 100,

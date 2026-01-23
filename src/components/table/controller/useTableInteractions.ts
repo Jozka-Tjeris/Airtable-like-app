@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback, useEffect } from "react";
-import type { CellValue, TableRow, Column } from "./tableTypes";
+import { useState, useRef, useCallback, useEffect, type SetStateAction } from "react";
+import type { CellValue, TableRow, Column, CellMap } from "./tableTypes";
 import { api as trpc } from "~/trpc/react";
 
 type PendingUpdate = {
@@ -13,7 +13,8 @@ export function useTableInteractions(
   initialActiveCell: { rowId: string; columnId: string } | null,
   tableId: string,
   rowsRef: React.RefObject<TableRow[]>,
-  columnsRef: React.RefObject<Column[]>
+  columnsRef: React.RefObject<Column[]>,
+  setCells: React.Dispatch<React.SetStateAction<CellMap>>
 ) {
   const [activeCell, setActiveCell] = useState(initialActiveCell);
   const cellRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -39,6 +40,11 @@ export function useTableInteractions(
       );
       if (!actualCol) return;
 
+      setCells(prev => ({
+        ...prev,
+        [`${stableRowId}:${stableColumnId}`]: value,
+      }));
+
       pendingCellUpdatesRef.current.push({
         rowId: actualRow?.id ?? stableRowId,
         columnId: actualCol?.id ?? stableColumnId,
@@ -46,7 +52,7 @@ export function useTableInteractions(
         tableId,
       });
     },
-    [tableId, rowsRef, columnsRef]
+    [setCells, tableId, rowsRef, columnsRef]
   );
 
   // Flush pending updates every 300ms
