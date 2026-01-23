@@ -7,7 +7,7 @@ import { useTableController } from "@/components/table/controller/TableProvider"
  * as they are now managed via the table instance or Context.
  */
 export function TableBody() {
-  const { table, rows, columns, handleDeleteRow, ROW_HEIGHT, activeCell } =
+  const { table, rows, columns, handleDeleteRow, ROW_HEIGHT, DEFAULT_COL_WIDTH, activeCell } =
     useTableController();
 
   const hasRows = rows.length > 0;
@@ -74,7 +74,7 @@ export function TableBody() {
   columns.forEach(col => {
     if (table.getColumn(col.internalId ?? col.id)?.getIsPinned()) {
       leftOffsetMap[col.internalId ?? col.id] = cumulativeLeft;
-      cumulativeLeft += col.width ?? 180; // fallback to default width
+      cumulativeLeft += col.width ?? DEFAULT_COL_WIDTH; // fallback to default width
     }
   });
 

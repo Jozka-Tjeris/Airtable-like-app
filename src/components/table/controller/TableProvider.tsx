@@ -42,6 +42,9 @@ export type TableProviderState = {
   isNumericalValue: (val: string) => boolean;
   startVerticalResize: (e: React.MouseEvent) => void;
   ROW_HEIGHT: number;
+  DEFAULT_COL_WIDTH: number;
+  MIN_COL_WIDTH: number;
+  MAX_COL_WIDTH: number;
   pinColumn: (columnId: string) => void;
   unpinColumn: () => void;
   togglePinColumn: (columnId: string) => void;
@@ -180,7 +183,7 @@ export function TableProvider({
     }
   }, [initialCells]);
 
-  const { ROW_HEIGHT, headerHeight, columnSizing, 
+  const { ROW_HEIGHT, DEFAULT_COL_WIDTH, MIN_COL_WIDTH, MAX_COL_WIDTH, headerHeight, columnSizing, 
     setHeaderHeight, startVerticalResize, setColumnSizing 
   } = useTableLayout(cached?.columnSizing);
 
@@ -325,9 +328,9 @@ export function TableProvider({
         id: colId,
         accessorFn: (row) => cells[`${row.internalId ?? row.id}:${colId}`],
         header: col.label,
-        size: col.width ?? 180,
-        minSize: 100,
-        maxSize: 800,
+        size: col.width ?? DEFAULT_COL_WIDTH,
+        minSize: MIN_COL_WIDTH,
+        maxSize: MAX_COL_WIDTH,
         meta: { columnType: col.columnType ?? "text", dbId: col.id },
         // Use the stable renderer function
         cell: CellRenderer,
@@ -392,6 +395,9 @@ export function TableProvider({
       setHeaderHeight,
       startVerticalResize,
       ROW_HEIGHT,
+      DEFAULT_COL_WIDTH, 
+      MIN_COL_WIDTH, 
+      MAX_COL_WIDTH,
       pinColumn,
       unpinColumn,
       togglePinColumn,
@@ -422,6 +428,9 @@ export function TableProvider({
       setActiveCell,
       setHeaderHeight,
       ROW_HEIGHT,
+      DEFAULT_COL_WIDTH,
+      MIN_COL_WIDTH,
+      MAX_COL_WIDTH,
       pinColumn,
       unpinColumn,
       togglePinColumn,

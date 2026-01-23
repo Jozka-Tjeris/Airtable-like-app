@@ -1,7 +1,10 @@
 import type { ColumnSizingState } from "@tanstack/react-table";
 import { useState, useCallback } from "react";
 
-export const ROW_HEIGHT = 40;
+const ROW_HEIGHT = 40;
+const DEFAULT_COL_WIDTH = 180;
+const MIN_COL_WIDTH = 100;
+const MAX_COL_WIDTH = 800;
 
 export function useTableLayout(cachedColumnSizing: ColumnSizingState | undefined, initialHeaderHeight: number = ROW_HEIGHT) {
   const [headerHeight, setHeaderHeight] = useState<number>(initialHeaderHeight);
@@ -32,6 +35,9 @@ export function useTableLayout(cachedColumnSizing: ColumnSizingState | undefined
 
   return {
     ROW_HEIGHT,
+    DEFAULT_COL_WIDTH,
+    MIN_COL_WIDTH,
+    MAX_COL_WIDTH,
     headerHeight,
     setHeaderHeight,
     startVerticalResize,
