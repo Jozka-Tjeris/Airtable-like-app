@@ -24,8 +24,9 @@ function TableHeaderContent({ isFiltered, isSorted, isPinned, actualId, type, he
 
   const onFilterColumnClick = useCallback(
     (header: Header<TableRow, unknown>, columnType: string) => {
+      const currFilterVal = header.column.getFilterValue() as string;
       let filterVal = prompt(
-        "Set a filter value for this column (Leave blank to clear the filter): ",
+        "Set a filter value for this column (Leave blank to clear the filter): ", currFilterVal,
       );
       if (filterVal === null) return;
       else if (filterVal === "") filterVal = null;
