@@ -5,16 +5,17 @@ import React, { createContext, useContext, useState, useCallback, useMemo,
 } from "react";
 import { useReactTable, getCoreRowModel, getFilteredRowModel, getSortedRowModel,
   type ColumnDef, type SortingState, type ColumnFiltersState, type VisibilityState,
-  type ColumnSizingState, type Table, type CellContext 
+  type ColumnSizingState, type Table, type CellContext, 
+  type ColumnPinningState,
 } from "@tanstack/react-table";
 import type {
   Column, Row, CellMap, CellValue,TableRow, ColumnType 
 } from "./tableTypes";
 import { TableCell } from "../TableCell";
-import { api as trpc } from "~/trpc/react";
 import { useTableLayout } from "./useTableLayout";
 import { useTableInteractions } from "./useTableInteractions";
 import { useTableStructure } from "./useTableStructure";
+import { useTableStateCache } from "./useTableStateCache";
 
 export type TableProviderState = {
   rows: TableRow[];
@@ -41,6 +42,11 @@ export type TableProviderState = {
   isNumericalValue: (val: string) => boolean;
   startVerticalResize: (e: React.MouseEvent) => void;
   ROW_HEIGHT: number;
+  pinColumn: (columnId: string) => void;
+  unpinColumn: () => void;
+  togglePinColumn: (columnId: string) => void;
+  isColumnPinned: (columnId: string) => boolean;
+  getPinnedColumnId: () => string | null;
 };
 
 const TableContext = createContext<TableProviderState | undefined>(undefined);
@@ -87,10 +93,69 @@ export function TableProvider({
   useEffect(() => { rowsRef.current = rows; }, [rows]);
   useEffect(() => { columnsRef.current = columns; }, [columns]);
 
+  const { load, save } = useTableStateCache(tableId);
+  const cachedRef = useRef<ReturnType<typeof load> | null>(null);
+
+  if (cachedRef.current === null) {
+    cachedRef.current = load(initialColumns.map(c => c.internalId ?? c.id));
+  }
+
+  const cached = cachedRef.current;
+
   const [globalSearch, setGlobalSearch] = useState<string>(initialGlobalSearch);
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [sorting, setSorting] = useState<SortingState>(cached?.sorting ?? []);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(cached?.columnFilters ?? []);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(cached?.columnVisibility ?? {});
+  const [columnPinning, setColumnPinning] = useState<ColumnPinningState>(
+    cached?.columnPinning ?? {left: [], right: []}
+  );
+
+  const pinColumn = useCallback((columnId: string) => {
+    setColumnPinning({
+      left: [columnId],   // enforce single left pin
+      right: [],
+    });
+  }, []);
+
+  const unpinColumn = useCallback(() => {
+    setColumnPinning({ left: [], right: [] });
+  }, []);
+
+  const togglePinColumn = useCallback((columnId: string) => {
+    setColumnPinning(prev => {
+      const isPinned = prev.left?.[0] === columnId;
+      return isPinned
+        ? { left: [], right: [] }
+        : { left: [columnId], right: [] };
+    });
+  }, []);
+
+  const isColumnPinned = useCallback(
+    (columnId: string) => columnPinning.left?.[0] === columnId,
+    [columnPinning]
+  );
+
+  const getPinnedColumnId = useCallback(
+    () => columnPinning.left?.[0] ?? null,
+    [columnPinning]
+  );
+
+  const handleColumnPinningChange = useCallback(
+    (updater: ColumnPinningState | ((prev: ColumnPinningState) => ColumnPinningState)) => {
+      setColumnPinning(prev => {
+        const next = typeof updater === "function" ? updater(prev) : updater;
+
+        // Normalize: single left pin only
+        const left = next.left?.slice(0, 1) ?? [];
+
+        return {
+          left,
+          right: [], // always clear right
+        };
+      });
+    },
+    []
+  );
 
   useEffect(() => {
     if (initialRows.length > 0) {
@@ -112,7 +177,7 @@ export function TableProvider({
 
   const { ROW_HEIGHT, headerHeight, columnSizing, 
     setHeaderHeight, startVerticalResize, setColumnSizing 
-  } = useTableLayout()
+  } = useTableLayout(cached?.columnSizing);
 
   const { activeCell, pendingCellUpdatesRef, cellRefs, updateCellsMutation,
     setActiveCell, registerRef, updateCell, isNumericalValue,
@@ -122,6 +187,61 @@ export function TableProvider({
     handleAddColumn, handleDeleteColumn, handleRenameColumn, 
     getIsStructureStable, structureMutationInFlightRef 
   } = useTableStructure(tableId, setRows, setColumns, columnsRef);
+
+  const saveTimeoutRef = useRef<number | null>(null);
+  const hasMountedRef = useRef(false);
+
+  useEffect(() => {
+    if(!hasMountedRef.current){
+      hasMountedRef.current = true;
+      return;
+    }
+
+    if(!getIsStructureStable()) return;
+
+    if(saveTimeoutRef.current !== null){
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = window.setTimeout(() => {
+      save({
+        sorting,
+        columnFilters,
+        columnVisibility,
+        columnSizing,
+        columnPinning,
+      });
+    }, 300);
+
+    return () => {
+      if (saveTimeoutRef.current !== null) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [
+    sorting,
+    columnFilters,
+    columnVisibility,
+    columnSizing,
+    getIsStructureStable,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      // Flush any pending debounce
+      if (saveTimeoutRef.current !== null) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      save({
+        sorting,
+        columnFilters,
+        columnVisibility,
+        columnSizing,
+        columnPinning,
+      });
+    };
+  }, []);
 
   //Flush cell updates after preset interval duration
   useEffect(() => {
@@ -187,7 +307,7 @@ export function TableProvider({
         id: colId,
         accessorFn: (row) => cells[`${row.internalId ?? row.id}:${colId}`] ?? "",
         header: col.label,
-        size: col.width ?? 150,
+        size: col.width ?? 180,
         minSize: 100,
         maxSize: 800,
         meta: { columnType: col.columnType ?? "text", dbId: col.id },
@@ -202,11 +322,12 @@ export function TableProvider({
   const table = useReactTable({
     data: tableData,
     columns: tableColumns,
-    state: { sorting, columnFilters, columnVisibility, columnSizing },
+    state: { sorting, columnFilters, columnVisibility, columnSizing, columnPinning },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     onColumnSizingChange: setColumnSizing,
+    onColumnPinningChange: handleColumnPinningChange,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -253,6 +374,11 @@ export function TableProvider({
       setHeaderHeight,
       startVerticalResize,
       ROW_HEIGHT,
+      pinColumn,
+      unpinColumn,
+      togglePinColumn,
+      isColumnPinned,
+      getPinnedColumnId,
     }),
     [
       rows,
@@ -278,6 +404,11 @@ export function TableProvider({
       setActiveCell,
       setHeaderHeight,
       ROW_HEIGHT,
+      pinColumn,
+      unpinColumn,
+      togglePinColumn,
+      isColumnPinned,
+      getPinnedColumnId,
     ],
   );
 

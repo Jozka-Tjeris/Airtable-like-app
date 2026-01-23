@@ -3,9 +3,9 @@ import { useState, useCallback } from "react";
 
 export const ROW_HEIGHT = 40;
 
-export function useTableLayout(initialHeaderHeight: number = ROW_HEIGHT) {
+export function useTableLayout(cachedColumnSizing: ColumnSizingState | undefined, initialHeaderHeight: number = ROW_HEIGHT) {
   const [headerHeight, setHeaderHeight] = useState<number>(initialHeaderHeight);
-  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
+  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>(cachedColumnSizing ?? {});
 
   // Vertical header resize
   const startVerticalResize = useCallback(
