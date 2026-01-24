@@ -25,6 +25,14 @@ export const viewsRouter = createTRPCRouter({
       });
     }),
 
+  getDefaultView: protectedProcedure
+    .input(z.object({ tableId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      return ctx.db.view.findFirst({
+        where: { tableId: input.tableId, isDefault: true },
+      });
+    }),
+
   // --------------------
   // Create a new view
   // --------------------
