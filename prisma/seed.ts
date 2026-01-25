@@ -3,7 +3,6 @@ import { PrismaClient } from "../src/generated/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { faker } from "@faker-js/faker";
-// import { SEED_OWNER_ID } from "./seed.config";
 
 const SEED_OWNER_ID = "";
 
