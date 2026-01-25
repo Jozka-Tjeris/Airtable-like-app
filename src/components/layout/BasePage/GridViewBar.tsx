@@ -50,7 +50,7 @@ export function GridViewBar() {
 
         {views.map((v) => (
           <option key={v.id} value={v.id}>
-            {v.name} {v.id === defaultView?.id ? "★" : ""}
+            {v.id === defaultView?.id ? "★" : ""} {v.name}
           </option>
         ))}
       </select>
