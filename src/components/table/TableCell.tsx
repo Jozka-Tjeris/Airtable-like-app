@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, memo, useCallback } from "react";
 import { type CellValue, type ColumnType } from "./controller/tableTypes";
 import { useMoveActiveCell } from "./controller/tableNavigation";
-import { useTableStructureController } from "./controller/TableProvider";
+import { useTableStructureController, INDEX_COL_ID } from "./controller/TableProvider";
 
 type TableCellProps = {
   value: CellValue;
@@ -166,7 +166,7 @@ export const TableCell = memo(function TableCell({
   };
 
   // --- Row index column detection ---
-  const isRowIndexColumn = columnId === "__row_index__";
+  const isRowIndexColumn = columnId === INDEX_COL_ID;
 
   // If this is the row index column return early (shouldn't return anything)
   if (isRowIndexColumn) {

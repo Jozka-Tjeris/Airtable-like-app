@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { flexRender, type Header, type SortDirection } from "@tanstack/react-table";
-import { useTableStructureController } from "@/components/table/controller/TableProvider";
+import { useTableStructureController, INDEX_COL_ID } from "@/components/table/controller/TableProvider";
 import {
   type ColumnType,
   type TableRow,
@@ -126,6 +126,7 @@ export function TableHeader() {
     handleDeleteColumn,
     headerHeight,
     startVerticalResize,
+    getPinnedLeftStyle
   } = useTableStructureController();
 
   const headerGroups = table.getHeaderGroups();
@@ -143,29 +144,25 @@ export function TableHeader() {
     handleAddColumn(columns.length + 1, name, type);
   }, [columns.length, handleAddColumn]);
 
-  let prevColSize = 0;
-
   return (
     <thead className="bg-gray-50 text-[11px] tracking-wider text-gray-500 uppercase">
       {columns.length > 0 ? (
         headerGroups.map((group) => (
           <tr key={group.id} style={{ height: headerHeight }}>
             {group.headers.map((header) => {
-              const isRowIndex = header.id === "__row_index__"; // detect row index column
+              const isRowIndex = header.id === INDEX_COL_ID; // detect row index column
 
               if (isRowIndex) {
                 return (
                   <th
                     key={header.id}
                     style={{
-                      width: header.getSize(),
                       minWidth: header.column.columnDef.minSize,
                       maxWidth: header.column.columnDef.maxSize,
                       height: headerHeight,
-                      position: "sticky",
                       top: 0,
-                      left: 0,
                       zIndex: 40,
+                      ...getPinnedLeftStyle(header.column.columnDef.id!)
                     }}
                     className="border-r border-b bg-gray-200 px-3 py-2 font-medium text-center text-gray-500 select-none"
                   >
@@ -186,16 +183,18 @@ export function TableHeader() {
               const actualId = meta?.dbId;
               const config = COLUMN_CONFIG[type];
 
-              let leftOffset = 0; // cumulative offset for pinned columns
-              if (header.column.getIsPinned()) {
-                leftOffset += prevColSize;
-              }
-              prevColSize = header.getSize();
-
               return (
                 <th
                   key={header.id}
-                  style={{
+                  style={header.column.getIsPinned() ? {
+                    //Add min and max width to prevent shrinking and stretching respectively
+                    minWidth: header.column.columnDef.minSize,
+                    maxWidth: header.column.columnDef.maxSize,
+                    height: headerHeight,
+                    top: 0,
+                    zIndex: 40,
+                    ...getPinnedLeftStyle(header.column.columnDef.id!),
+                  } : {
                     width: header.getSize(),
                     //Add min and max width to prevent shrinking and stretching respectively
                     minWidth: header.column.columnDef.minSize,
@@ -203,8 +202,7 @@ export function TableHeader() {
                     height: headerHeight,
                     position: "sticky",
                     top: 0,
-                    left: header.column.getIsPinned() ? leftOffset : undefined,
-                    zIndex: header.column.getIsPinned() ? 40 : 30,
+                    zIndex: 30,
                   }}
                   className={`border-r border-b px-3 py-2 font-medium transition-colors select-none last:border-r-0 border-gray-300 ${
                     isSorted ? "bg-blue-50" : "bg-gray-100"

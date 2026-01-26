@@ -50,13 +50,11 @@ export type TableStructureState = {
   DEFAULT_COL_WIDTH: number;
   MIN_COL_WIDTH: number;
   MAX_COL_WIDTH: number;
-  pinColumn: (columnId: string) => void;
-  unpinColumn: () => void;
-  togglePinColumn: (columnId: string) => void;
-  isColumnPinned: (columnId: string) => boolean;
-  getPinnedColumnId: () => string | null;
   mainScrollRef: React.RefObject<HTMLDivElement | null>;
   rowVirtualizer: Virtualizer<HTMLDivElement, Element>;
+  getPinnedLeftStyle: (columnId: string) => React.CSSProperties;
+  isPinnedLeft: (columnId: string) => boolean;
+  lastPinnedLeftId: string | null;
 };
 
 export type TableViewState = {
@@ -118,6 +116,8 @@ export const useTableController = () => {
   );
 };
 
+export const INDEX_COL_ID = "__row_index__";
+
 type TableProviderProps = {
   children: ReactNode;
   tableId: string;
@@ -162,7 +162,7 @@ export function TableProvider({
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [columnPinning, setColumnPinning] = useState<ColumnPinningState>({
-    left: [],
+    left: [INDEX_COL_ID],
     right: [],
   });
 
@@ -174,39 +174,9 @@ export function TableProvider({
     setSorting(cached.sorting ?? []);
     setColumnFilters(cached.columnFilters ?? []);
     setColumnVisibility(cached.columnVisibility ?? {});
-    setColumnPinning(cached.columnPinning ?? { left: [], right: [] });
+    setColumnPinning(cached.columnPinning ?? { left: [INDEX_COL_ID], right: [] });
     setGlobalSearch(cached.globalSearch ?? "");
   }, [cached]);
-
-  const pinColumn = useCallback((columnId: string) => {
-    setColumnPinning({
-      left: [columnId],   // enforce single left pin
-      right: [],
-    });
-  }, []);
-
-  const unpinColumn = useCallback(() => {
-    setColumnPinning({ left: [], right: [] });
-  }, []);
-
-  const togglePinColumn = useCallback((columnId: string) => {
-    setColumnPinning(prev => {
-      const isPinned = prev.left?.[0] === columnId;
-      return isPinned
-        ? { left: [], right: [] }
-        : { left: [columnId], right: [] };
-    });
-  }, []);
-
-  const isColumnPinned = useCallback(
-    (columnId: string) => columnPinning.left?.[0] === columnId,
-    [columnPinning]
-  );
-
-  const getPinnedColumnId = useCallback(
-    () => columnPinning.left?.[0] ?? null,
-    [columnPinning]
-  );
 
   const handleColumnPinningChange = useCallback(
     (updater: ColumnPinningState | ((prev: ColumnPinningState) => ColumnPinningState)) => {
@@ -214,11 +184,18 @@ export function TableProvider({
         const next = typeof updater === "function" ? updater(prev) : updater;
 
         // Normalize: single left pin only
-        const left = next.left?.slice(0, 1) ?? [];
+        let left = next.left ?? [];
+
+        // Remove duplicates
+        left = Array.from(new Set(left));
+
+        // Ensure index column is always first
+        left = left.filter(id => id !== INDEX_COL_ID);
+        left.unshift(INDEX_COL_ID);
 
         return {
           left,
-          right: [], // always clear right
+          right: [], // still disabled
         };
       });
     },
@@ -398,7 +375,7 @@ export function TableProvider({
 
   const tableColumns = useMemo<ColumnDef<TableRow, CellValue>[]>(() => {
     const rowIndexColumn: ColumnDef<TableRow, CellValue> = {
-      id: "__row_index__",
+      id: INDEX_COL_ID,
       header: "#",
       size: 60, // fixed width
       minSize: 60,
@@ -437,10 +414,7 @@ export function TableProvider({
       columnFilters, 
       columnVisibility, 
       columnSizing, 
-      columnPinning: {
-        ...columnPinning,
-        left: ["__row_index__"] //force row index pinned
-      },
+      columnPinning,
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -460,6 +434,61 @@ export function TableProvider({
     estimateSize: () => ROW_HEIGHT,
     overscan: 8, // buffer rows above/below viewport
   });
+
+  const { 
+    columnPinning: colPinDep, 
+    columnSizing: colSizeDep, 
+    columnVisibility: colVisDep 
+  } = table.getState();
+
+  const pinnedLeftMeta = useMemo(() => {
+    let offset = 0;
+    const map: Record<string,
+      { id: string; left: number; width: number; index: number }> = {};
+
+    const pinnedLeftColumns = table.getLeftLeafColumns();
+
+    pinnedLeftColumns.forEach((col, index) => {
+      map[col.id] = {
+        id: col.id,
+        left: offset,
+        width: col.getSize(),
+        index,
+      };
+      offset += col.getSize();
+    });
+
+    return {
+      map,
+      totalWidth: offset,
+      orderedIds: pinnedLeftColumns.map(c => c.id),
+    };
+  }, 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [table, colPinDep, colSizeDep, colVisDep]);
+
+  const isPinnedLeft = useCallback(
+    (columnId: string) => !!pinnedLeftMeta.map[columnId],
+    [pinnedLeftMeta]
+  );
+
+  const lastPinnedLeftId =
+    pinnedLeftMeta.orderedIds[pinnedLeftMeta.orderedIds.length - 1] ?? null;
+
+  const getPinnedLeftStyle = useCallback(
+    (columnId: string): React.CSSProperties => {
+      const meta = pinnedLeftMeta.map[columnId];
+      if (!meta) return {};
+
+      return {
+        position: "sticky" as const,
+        left: meta.left,
+        width: meta.width,
+        boxShadow: meta.id === lastPinnedLeftId ? "2px 0 6px rgba(0,0,0,0.1)" : ""
+      };
+    },
+    [pinnedLeftMeta, lastPinnedLeftId]
+  );
 
   const { newViewName, setNewViewName,
     activeViewId, setActiveViewId,
@@ -519,13 +548,12 @@ export function TableProvider({
       DEFAULT_COL_WIDTH, 
       MIN_COL_WIDTH, 
       MAX_COL_WIDTH,
-      pinColumn,
-      unpinColumn,
-      togglePinColumn,
-      isColumnPinned,
-      getPinnedColumnId,
       mainScrollRef,
       rowVirtualizer,
+      getPinnedLeftStyle,
+      pinnedLeftMeta,
+      isPinnedLeft,
+      lastPinnedLeftId,
     }),
     [
       rows,
@@ -556,13 +584,12 @@ export function TableProvider({
       DEFAULT_COL_WIDTH,
       MIN_COL_WIDTH,
       MAX_COL_WIDTH,
-      pinColumn,
-      unpinColumn,
-      togglePinColumn,
-      isColumnPinned,
-      getPinnedColumnId,
       mainScrollRef,
       rowVirtualizer,
+      getPinnedLeftStyle,
+      pinnedLeftMeta,
+      isPinnedLeft,
+      lastPinnedLeftId,
     ],
   );
 
