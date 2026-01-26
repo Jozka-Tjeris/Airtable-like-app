@@ -29,14 +29,6 @@ export const TableCell = memo(function TableCell({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // --- Row index column detection ---
-  const isRowIndexColumn = columnId === "__row_index__";
-
-  // If this is the row index column return early (shouldn't return anything)
-  if (isRowIndexColumn) {
-    return;
-  }
-
   // --- Editable cell logic for normal cells ---
   const [isEditing, setIsEditing] = useState(false);
   const [localValue, setLocalValue] = useState(value ?? "");
@@ -123,14 +115,18 @@ export const TableCell = memo(function TableCell({
         case "Tab":
           e.preventDefault();
           commit();
-          e.shiftKey ? moveActiveCell("left") : moveActiveCell("right");
+          if(e.shiftKey) moveActiveCell("left") 
+          else moveActiveCell("right");
           break;
       }
     } else if (isActive) {
       if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Tab"].includes(e.key)) e.preventDefault();
       switch (e.key) {
         case "Enter": setIsEditing(true); break;
-        case "Tab": cancel(); e.shiftKey ? moveActiveCell("left") : moveActiveCell("right"); break;
+        case "Tab": cancel(); 
+          if(e.shiftKey) moveActiveCell("left") 
+          else moveActiveCell("right"); 
+          break;
         case "ArrowRight": moveActiveCell("right"); break;
         case "ArrowLeft": moveActiveCell("left"); break;
         case "ArrowUp": moveActiveCell("up"); break;
@@ -168,6 +164,14 @@ export const TableCell = memo(function TableCell({
       if (isNumericalValue(val)) setLocalValue(val);
     } else setLocalValue(val);
   };
+
+  // --- Row index column detection ---
+  const isRowIndexColumn = columnId === "__row_index__";
+
+  // If this is the row index column return early (shouldn't return anything)
+  if (isRowIndexColumn) {
+    return;
+  }
 
   return (
     <div

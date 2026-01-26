@@ -18,7 +18,7 @@ import { useTableStructure } from "./useTableStructure";
 import { normalizeState, useTableStateCache, type CachedTableState } from "./useTableStateCache";
 import { useTableViews } from "./useTableViews";
 import type { JsonValue } from "@prisma/client/runtime/client";
-import { useVirtualizer, Virtualizer } from "@tanstack/react-virtual";
+import { useVirtualizer, type Virtualizer } from "@tanstack/react-virtual";
 
 export type TableStructureState = {
   rows: TableRow[];
