@@ -102,7 +102,7 @@ export function useTableViews(
       setCached(config);
       save(config);
     },
-    [setters, setActiveCell]
+    [setters, setActiveCell, save, setCached]
   );
 
   /* ---------------------------- Mutations ----------------------------- */
