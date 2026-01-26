@@ -52,7 +52,7 @@ export function useTableStructure(
       );
     },
     onError: (_, { optimisticId }) => {
-      setColumns((prev) => prev.filter((c) => c.id !== optimisticId));
+      setColumns(prev => prev.filter(c => c.id !== optimisticId && c.internalId !== optimisticId));
     },
     onSettled: () => endStructureMutation(),
   });
