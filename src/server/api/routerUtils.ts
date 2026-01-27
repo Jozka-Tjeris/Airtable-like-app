@@ -1,5 +1,5 @@
 import { type CellValue } from "~/components/table/controller/tableTypes";
-import type { Prisma } from "~/generated/client";
+import type { Prisma } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import type { createTRPCContext } from "~/server/api/trpc";
 
