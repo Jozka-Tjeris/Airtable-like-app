@@ -230,6 +230,7 @@ export function useTableViews(
     applyView,
     setDefaultViewMutation,
     createViewMutation,
+    persistAppliedView,
   ]);
 
   useEffect(() => {
@@ -291,7 +292,7 @@ export function useTableViews(
   const handleSetDefaultView = (view: { id: string; config: unknown; }) => {
     setDefaultViewMutation.mutate({ viewId: view.id });
     applyView(view);
-    persistAppliedView(view.config as unknown as CachedTableState);
+    persistAppliedView(view.config as CachedTableState);
   }
 
   const handleDeleteView = (view: { id: string; config: unknown; }) => {
@@ -321,8 +322,9 @@ export function useTableViews(
     currentConfig,
     columns,
     updateViewMutation,
-    applyView,
     INDEX_COL_ID,
+    save,
+    setCached,
   ]);
 
   return {
