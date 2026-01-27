@@ -70,6 +70,7 @@ export type TableViewState = {
   views: { tableId: string; name: string; createdAt: Date; updatedAt: Date; id: string; config: JsonValue; isDefault: boolean; }[];
   defaultView: { tableId: string; name: string; createdAt: Date; updatedAt: Date; id: string; config: JsonValue; isDefault: boolean; } | null | undefined;
   applyView: (view: { id: string; config: unknown; }) => void;
+  persistAppliedView: (config: CachedTableState) => void;
   resetViewConfig: () => void;
   handleCreateView: () => void;
   handleUpdateView: () => void;
@@ -234,7 +235,6 @@ export function TableProvider({
   // After cache has loaded, perform normalization
   useEffect(() => {
     if (!cached || !columns.length) return;
-    console.log(cached, columns)
     const ids = new Set(columns.map(c => c.id).filter(id => !isOptimisticColumnId(id)));
     // Always add INDEX_COL_ID as it's a required column id stored in a view config
     ids.add(INDEX_COL_ID);
@@ -430,7 +430,7 @@ export function TableProvider({
     activeViewId, setActiveViewId,
     activeViewConfig, setActiveViewConfig, currentConfig, resetViewConfig,
     isViewDirty, isConfigValid,
-    views, defaultView, applyView,
+    views, defaultView, applyView, persistAppliedView,
     handleCreateView, handleUpdateView, handleSetDefaultView, handleDeleteView,
     onStructureCommitted,
   } = useTableViews(
@@ -579,6 +579,7 @@ export function TableProvider({
       views,
       defaultView,
       applyView,
+      persistAppliedView,
       resetViewConfig,
       handleCreateView,
       handleUpdateView,
@@ -598,6 +599,7 @@ export function TableProvider({
       views,
       defaultView,
       applyView,
+      persistAppliedView,
       resetViewConfig,
       handleCreateView,
       handleUpdateView,

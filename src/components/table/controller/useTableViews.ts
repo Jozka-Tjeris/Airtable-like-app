@@ -124,29 +124,33 @@ export function useTableViews(
       setActiveCell(null);
       setActiveViewId(view.id);
       setActiveViewConfig(config);
-      // Update cached table state to persist across page navigation
-      setCached(config);
-      save(config);
     },
-    [setters, setActiveCell, save, setCached]
+    [setters, setActiveCell]
   );
+
+  const persistAppliedView = useCallback((config: CachedTableState) => {
+    // Update cached table state to persist across page navigation
+    setCached(config);
+    save(config);
+  }, [setCached, save]);
 
   /* ---------------------------- Mutations ----------------------------- */
   const createViewMutation = trpc.views.createView.useMutation({
     onSuccess: async (res) => {
       await Promise.all([viewsQuery.refetch(), defaultViewQuery.refetch()]);
       applyView(res.createdView); // Apply immediately
+      persistAppliedView(res.createdView.config as unknown as CachedTableState);
     },
   });
 
   const updateViewMutation = trpc.views.updateView.useMutation({
     onSuccess: async (_, vars) => {
-      setActiveViewConfig(vars.config as CachedTableState);
-      if (vars?.config) {
-        applyView({ id: activeViewId!, config: vars.config }); // Sync cache & active config
-      }
+      if (!vars?.config) return;
       await viewsQuery.refetch();
-    },
+      const config = vars.config as CachedTableState;
+      setActiveViewConfig(config);
+      persistAppliedView(config);
+    }
   });
 
   const setDefaultViewMutation = trpc.views.setDefaultView.useMutation({
@@ -195,6 +199,7 @@ export function useTableViews(
     // Default exists --> apply it
     if (defaultView) {
       applyView(defaultView);
+      persistAppliedView(defaultView.config as unknown as CachedTableState);
       return;
     }
 
@@ -202,6 +207,7 @@ export function useTableViews(
     if (views.length > 0) {
       setDefaultViewMutation.mutate({ viewId: views[0]!.id });
       applyView(views[0]!);
+      persistAppliedView(views[0]!.config as unknown as CachedTableState);
       return;
     }
 
@@ -276,17 +282,16 @@ export function useTableViews(
     setters.setColumnFilters([]);
     setters.setColumnVisibility({});
     setters.setColumnSizing({});
-    setters.setColumnPinning({ left: [], right: [] });
+    setters.setColumnPinning({ left: [INDEX_COL_ID], right: [] });
     setters.setGlobalSearch("");
 
     setActiveCell(null);
-    setActiveViewId(null);
-    setActiveViewConfig(null);
-  }, [setters, setActiveCell]);
+  }, [setters, setActiveCell, INDEX_COL_ID]);
 
   const handleSetDefaultView = (view: { id: string; config: unknown; }) => {
     setDefaultViewMutation.mutate({ viewId: view.id });
     applyView(view);
+    persistAppliedView(view.config as unknown as CachedTableState);
   }
 
   const handleDeleteView = (view: { id: string; config: unknown; }) => {
@@ -308,7 +313,9 @@ export function useTableViews(
       config: toViewConfigInput(normalized),
     });
 
-    applyView({ id: activeViewId, config: normalized });
+    setActiveViewConfig(normalized);
+    setCached(normalized);
+    save(normalized);
   }, [
     activeViewId,
     currentConfig,
@@ -331,6 +338,7 @@ export function useTableViews(
     views: viewsQuery.data ?? [],
     defaultView: defaultViewQuery.data,
     applyView,
+    persistAppliedView,
     resetViewConfig,
     handleCreateView,
     handleUpdateView,
