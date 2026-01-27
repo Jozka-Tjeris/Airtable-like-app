@@ -315,6 +315,7 @@ export function useTableViews(
     columns,
     updateViewMutation,
     applyView,
+    INDEX_COL_ID,
   ]);
 
   return {

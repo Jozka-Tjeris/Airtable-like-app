@@ -48,11 +48,7 @@ function TableHeaderContent({ isFiltered, isSorted, isPinned, actualId, type, he
         <span
           className="truncate"
           onClick={(e) => e.stopPropagation()}
-          onDoubleClick={() => {
-            const newLabel = prompt("Enter new column name:");
-            if (newLabel && newLabel.trim() !== "")
-              handleRenameColumn(actualId, newLabel.trim());
-          }}
+          onDoubleClick={() => handleRenameColumn(actualId)}
         >
           {flexRender(
             header.column.columnDef.header,
@@ -131,19 +127,6 @@ export function TableHeader() {
 
   const headerGroups = table.getHeaderGroups();
 
-  const onAddColumnClick = useCallback(() => {
-    const name = prompt("Enter column name:", `Column ${columns.length + 1}`);
-    if (!name) return;
-    const typeInput = prompt(
-      "Enter column type (text, number) [default is text]:",
-      "text",
-    );
-    if (typeInput === null) return;
-    const type: ColumnType =
-      typeInput.toLowerCase().trim() === "number" ? "number" : "text";
-    handleAddColumn(columns.length + 1, name, type);
-  }, [columns.length, handleAddColumn]);
-
   return (
     <thead className="bg-gray-50 text-[11px] tracking-wider text-gray-500 uppercase">
       {columns.length > 0 ? (
@@ -210,8 +193,7 @@ export function TableHeader() {
                   }`}
                   onContextMenu={(e) => {
                     e.preventDefault();
-                    if (window.confirm(`Delete column?`))
-                      handleDeleteColumn(actualId);
+                    handleDeleteColumn(actualId);
                   }}
                 >
                   {!header.isPlaceholder && (
@@ -248,7 +230,7 @@ export function TableHeader() {
               }}
             >
               <button
-                onClick={onAddColumnClick}
+                onClick={() => handleAddColumn(columns.length + 1)}
                 className="inline-flex h-6 w-6 items-center justify-center rounded bg-green-500 text-lg leading-none text-white shadow-sm transition hover:bg-green-600"
               >
                 +
@@ -271,7 +253,7 @@ export function TableHeader() {
               </span>
               <div className="flex items-center pr-4">
                 <button
-                  onClick={onAddColumnClick}
+                  onClick={() => handleAddColumn(columns.length + 1)}
                   className="inline-flex h-6 w-6 items-center justify-center rounded bg-green-500 text-lg leading-none text-white shadow-sm transition hover:bg-green-600"
                 >
                   +

@@ -1,4 +1,3 @@
-import React, { useCallback } from "react";
 import { flexRender } from "@tanstack/react-table";
 import { useTableStructureController, INDEX_COL_ID } from "@/components/table/controller/TableProvider";
 
@@ -8,23 +7,6 @@ export function TableBody() {
 
   const hasRows = rows.length > 0;
   const hasColumns = columns.length > 0;
-
-  const handleRowRightClick = useCallback(
-    (e: React.MouseEvent, rowId: string, rowPosition: number) => {
-      e.preventDefault();
-      // Use e.stopPropagation to prevent triggering any cell selection logic
-      e.stopPropagation();
-
-      const confirmed = window.confirm(
-        `Delete row "${rowPosition}"?\n\nThis will remove all its cell values.`,
-      );
-
-      if (confirmed) {
-        handleDeleteRow(rowId);
-      }
-    },
-    [handleDeleteRow],
-  );
 
   // -----------------------------
   // Empty State logic
@@ -87,7 +69,10 @@ export function TableBody() {
           <tr
             key={row.id}
             onContextMenu={(e) => {
-              handleRowRightClick(e, row.id, idx + 1);
+              e.preventDefault();
+              // Use e.stopPropagation to prevent triggering any cell selection logic
+              e.stopPropagation();
+              handleDeleteRow(row.id, idx + 1);
             }}
           >
             {row.getVisibleCells().map((cell) => {

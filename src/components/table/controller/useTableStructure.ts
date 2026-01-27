@@ -25,6 +25,13 @@ export function useTableStructure(
     []
   );
 
+  // IDs are guaranteed to be correct because it only commits after in-flight count hits zero
+  const maybeCommitStructure = () => {
+    if (structureMutationInFlightRef.current === 0) {
+      onStructureCommitted();
+    }
+  };
+
   const addRowMutation = trpc.row.addRow.useMutation({
     onMutate: () => beginStructureMutation(),
     onSuccess: ({ row, optimisticId }) => {
@@ -41,7 +48,7 @@ export function useTableStructure(
     },
     onSettled: () => {
       endStructureMutation();
-      onStructureCommitted();
+      maybeCommitStructure();
     },
   });
 
@@ -61,27 +68,35 @@ export function useTableStructure(
     },
     onSettled: () => {
       endStructureMutation();
-      onStructureCommitted();
+      maybeCommitStructure();
     },
   });
 
   const deleteRowMutation = trpc.row.deleteRow.useMutation({
     onSettled: () => {
       endStructureMutation();
-      onStructureCommitted();
+      maybeCommitStructure();
     }
   });
   const deleteColumnMutation = trpc.column.deleteColumn.useMutation({
     onSettled: () => {
       endStructureMutation();
-      onStructureCommitted();
+      maybeCommitStructure();
     }
   });
   const renameColumnMutation = trpc.column.renameColumn.useMutation({
+    onMutate: () => beginStructureMutation(),
     onSettled: () => {
-      onStructureCommitted();
+      endStructureMutation();
+      maybeCommitStructure();
     }
   });
+
+  const confirmStructuralChange = useCallback((action: string) => {
+    return confirm(
+      `${action}\n\nStructural changes are applied immediately and automatically saved to this view.`
+    );
+  }, []);
 
   const handleAddRow = useCallback(
     (orderNum: number) => {
@@ -90,10 +105,7 @@ export function useTableStructure(
         alert("The current view must be saved before adding any rows");
         return;
       }
-      else{
-        const response = confirm("Do you want to add a row? \n\nStructural changes are applied immediately and automatically saved to this view.");
-        if(!response) return;
-      }
+      if(!confirmStructuralChange("Do you want to add a row?")) return;
       const optimisticId = `optimistic-row-${crypto.randomUUID()}`;
       setRows((prev) => [
         ...prev,
@@ -106,51 +118,54 @@ export function useTableStructure(
       ]);
       addRowMutation.mutate({ tableId, orderNum, optimisticId });
     },
-    [addRowMutation, tableId, setRows, columnsRef]
+    [addRowMutation, tableId, setRows, columnsRef, isViewDirty, confirmStructuralChange]
   );
 
   const handleAddColumn = useCallback(
-    (orderNum: number, label: string, type: ColumnType) => {
+    (orderNum: number) => {
       if(isViewDirty){
         alert("The current view must be saved before adding any columns");
         return;
       }
-      else{
-        const response = confirm("Do you want to add a column? \n\nStructural changes are applied immediately and automatically saved to this view.");
-        if(!response) return;
-      }
+      if(!confirmStructuralChange("Do you want to add a column?")) return;
+      const colLabel = prompt("Enter column name:", `Column ${orderNum + 1}`);
+      if (!colLabel) return;
+      const typeInput = prompt(
+        "Enter column type (text, number) [default is text]:",
+        "text",
+      );
+      if (typeInput === null) return;
+      const type: ColumnType = typeInput.toLowerCase().trim() === "number" ? "number" : "text";
+
       const optimisticId = `optimistic-col-${crypto.randomUUID()}`;
       setColumns((prev) => [
         ...prev,
         {
           id: optimisticId,
           internalId: optimisticId,
-          label,
+          label: colLabel,
           order: orderNum,
           columnType: type,
           optimistic: true,
         },
       ]);
-      addColumnMutation.mutate({ tableId, label, orderNum, type, optimisticId });
+      addColumnMutation.mutate({ tableId, label: colLabel, orderNum, type, optimisticId });
     },
-    [addColumnMutation, tableId, setColumns]
+    [addColumnMutation, tableId, setColumns, isViewDirty, confirmStructuralChange]
   );
 
   const handleDeleteRow = useCallback(
-    (rowId: string) => {
+    (rowId: string, rowPosition: number) => {
       if(isViewDirty){
         alert("The current view must be saved before deleting any rows");
         return;
       }
-      else{
-        const response = confirm("Do you want to delete a row? \n\nStructural changes are applied immediately and automatically saved to this view.");
-        if(!response) return;
-      }
+      if(!confirmStructuralChange(`Delete row "${rowPosition}"?\n\nThis will remove all its cell values.`)) return;
       beginStructureMutation();
       setRows((prev) => prev.filter((r) => r.id !== rowId && r.internalId !== rowId));
       deleteRowMutation.mutate({ tableId, rowId });
     },
-    [deleteRowMutation, tableId, setRows]
+    [deleteRowMutation, tableId, setRows, isViewDirty, confirmStructuralChange]
   );
 
   const handleDeleteColumn = useCallback(
@@ -159,26 +174,25 @@ export function useTableStructure(
         alert("The current view must be saved before deleting any columns");
         return;
       }
-      else{
-        const response = confirm("Do you want to delete a column? \n\nStructural changes are applied immediately and automatically saved to this view.");
-        if(!response) return;
-      }
+      if(!confirmStructuralChange("Do you want to delete this column?")) return;
       beginStructureMutation();
       setColumns((prev) => prev.filter((c) => c.id !== columnId && c.internalId !== columnId));
       deleteColumnMutation.mutate({ tableId, columnId });
     },
-    [deleteColumnMutation, tableId, setColumns]
+    [deleteColumnMutation, tableId, setColumns, isViewDirty, confirmStructuralChange]
   );
 
   const handleRenameColumn = useCallback(
-    (columnId: string, newLabel: string) => {
+    (columnId: string) => {
       if(isViewDirty){
         alert("The current view must be saved before renaming any columns");
         return;
       }
-      else{
-        const response = confirm("Do you want to rename a column? \n\nStructural changes are applied immediately and automatically saved to this view.");
-        if(!response) return;
+      if(!confirmStructuralChange("Do you want to rename this column?")) return;
+      const newLabel = prompt("Enter new column name:");
+      if (!newLabel || newLabel.trim() === ""){
+        alert("Column name is invalid.");
+        return;
       }
       setColumns((prev) =>
         prev.map((c) =>
@@ -187,7 +201,7 @@ export function useTableStructure(
       );
       renameColumnMutation.mutate({ tableId, columnId, newLabel });
     },
-    [renameColumnMutation, tableId, setColumns]
+    [renameColumnMutation, tableId, setColumns, isViewDirty, confirmStructuralChange]
   );
 
   return {

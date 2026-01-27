@@ -9,7 +9,7 @@ import { useReactTable, getCoreRowModel, getFilteredRowModel, getSortedRowModel,
   type ColumnPinningState,
 } from "@tanstack/react-table";
 import type {
-  Column, Row, CellMap, CellValue,TableRow, ColumnType 
+  Column, Row, CellMap, CellValue, TableRow 
 } from "./tableTypes";
 import { TableCell } from "../TableCell";
 import { useTableLayout } from "./useTableLayout";
@@ -31,10 +31,10 @@ export type TableStructureState = {
   registerRef: (id: string, el: HTMLDivElement | null) => void;
   updateCell: (rowId: string, columnId: string, value: CellValue) => void;
   handleAddRow: (orderNum: number) => void;
-  handleDeleteRow: (rowId: string) => void;
-  handleAddColumn: (orderNum: number, label: string, type: ColumnType) => void;
+  handleDeleteRow: (rowId: string, rowPosition: number) => void;
+  handleAddColumn: (orderNum: number) => void;
   handleDeleteColumn: (columnId: string) => void;
-  handleRenameColumn: (columnId: string, newLabel: string) => void;
+  handleRenameColumn: (columnId: string) => void;
   sorting: SortingState;
   columnFilters: ColumnFiltersState;
   columnSizing: ColumnSizingState;
