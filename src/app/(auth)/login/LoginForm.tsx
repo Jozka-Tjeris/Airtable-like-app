@@ -1,7 +1,6 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import Link from "next/link";
 
 export default function LoginForm() {
   return (
@@ -36,7 +35,7 @@ export default function LoginForm() {
       </div>
 
       <h1 className="mb-8 text-center text-3xl font-semibold">
-        Welcome to "Not Airtable"
+        Welcome to &quot;Not Airtable&quot;
       </h1>
 
       <div className="flex flex-col items-center justify-center p-8">
@@ -151,7 +150,7 @@ export default function LoginForm() {
             Google account
           </a>
           <br/>
-          It's the only way to sign in right now ¯\_(ツ)_/¯
+          It&apos;s the only way to sign in right now ¯\_(ツ)_/¯
         </p>
       </div>
     </div>
