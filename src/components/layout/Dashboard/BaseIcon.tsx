@@ -23,6 +23,13 @@ export function BaseIcon({
     ? "Created today" 
     : `Created ${diffInDays} ${diffInDays === 1 ? "day" : "days"} ago`;
 
+  function capitalizeFirstLetter(label: string) {
+    if (label.length === 0) {
+      return "Un";
+    }
+    return label.charAt(0).toUpperCase() + label.charAt(1).toLowerCase();
+  }
+
   return (
     <div
       className="group relative flex h-24 items-center rounded-md border border-gray-200 bg-white p-4 transition-shadow hover:shadow-sm"
@@ -30,7 +37,7 @@ export function BaseIcon({
     >
       {/* Icon Square */}
       <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl bg-[#0d7f78] text-xl font-medium text-white">
-        <span>{name.slice(0, 2).toUpperCase() || "U"}</span>
+        <span>{capitalizeFirstLetter(name)}</span>
       </div>
 
       {/* Content Area - Now using flex-1 for better grid scaling */}
@@ -45,25 +52,15 @@ export function BaseIcon({
           {/* Actions Container */}
           <div className="flex shrink-0 items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
-              className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
-              onClick={() => {
-                const newName = prompt("Set new name for base:", name);
-                if (newName === null) return;
-                if (newName.trim() === "") {
-                  alert("Base name cannot be empty");
-                  return;
-                }
-                handleRenameBase(baseId, newName.trim());
-              }}
+              className="p-1 text-gray-400 hover:text-blue-600 transition-colors cursor-pointer"
+              onClick={() => handleRenameBase(baseId, name)}
               title="Rename"
             >
               ✏️
             </button>
             <button
-              className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-              onClick={() => {
-                if (window.confirm(`Delete base "${name}"?`)) handleDeleteBase(baseId);
-              }}
+              className="p-1 text-gray-400 hover:text-red-600 transition-colors cursor-pointer"
+              onClick={() => handleDeleteBase(baseId, name)}
               title="Delete"
             >
               🗑️

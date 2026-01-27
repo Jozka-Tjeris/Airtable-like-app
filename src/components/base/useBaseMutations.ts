@@ -110,14 +110,21 @@ export function useBaseMutations() {
   );
 
   const handleRenameBase = useCallback(
-    (baseId: string, name: string) => {
-      return renameBaseMutation.mutate({ baseId, name });
+    (baseId: string, oldName: string) => {
+      const newName = prompt("Set new name for base:", oldName);
+      if (newName === null) return;
+      if (newName.trim() === "") {
+        alert("Base name cannot be empty");
+        return;
+      }
+      return renameBaseMutation.mutate({ baseId, name: newName });
     },
     [renameBaseMutation],
   );
 
   const handleDeleteBase = useCallback(
-    (baseId: string) => {
+    (baseId: string, name: string) => {
+      if (!window.confirm(`Delete base "${name}"?`)) return;
       return deleteBaseMutation.mutate({ baseId });
     },
     [deleteBaseMutation],

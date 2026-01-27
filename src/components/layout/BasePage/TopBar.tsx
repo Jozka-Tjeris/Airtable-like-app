@@ -13,7 +13,7 @@ export function TopBar({ baseId }: TopBarProps) {
 
   return (
     <div className="border-gray-750 flex h-14 shrink-0 flex-row border-b bg-gray-50">
-      <div className="flex h-full w-[25%] flex-row items-center">
+      <div className="flex h-full w-[40%] flex-row items-center">
         <div
           data-testid="universal-top-nav-icon-background"
           className="mx-2 h-8 w-8 rounded-sm bg-blue-600"
@@ -42,20 +42,21 @@ export function TopBar({ baseId }: TopBarProps) {
             </svg>
           </div>
         </div>
-        <span
-          className="flex h-full flex-1 items-center px-2 select-none"
-          onDoubleClick={() => {
-            const newName = prompt("Set new name for base:");
-            if (newName === null) return;
-            if (newName.trim() === "") {
-              alert("Base name cannot be empty");
-              return;
-            }
-            handleRenameBase(baseId, newName.trim());
-          }}
-        >
-          {baseNameQuery.data?.name ?? ""}
-        </span>
+        <div className="flex h-full flex-1 items-center min-w-0"> {/* Parent handles alignment */}
+          <span
+            className="block truncate px-2 select-none" // Child handles truncation
+            title={baseNameQuery.data?.name ?? ""}
+          >
+            {baseNameQuery.data?.name ?? ""}
+          </span>
+          <button
+            className="p-1 text-gray-400 hover:text-blue-600 transition-colors cursor-pointer"
+            onClick={() => handleRenameBase(baseId, baseNameQuery.data?.name ?? "")}
+            title="Rename"
+          >
+            ✏️
+          </button>
+        </div>
       </div>
     </div>
   );
