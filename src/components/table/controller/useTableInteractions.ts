@@ -55,18 +55,6 @@ export function useTableInteractions(
     [setCells, tableId, rowsRef, columnsRef]
   );
 
-  // Flush pending updates every 300ms
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (pendingCellUpdatesRef.current.length === 0) return;
-      const updatesToSend = [...pendingCellUpdatesRef.current];
-      pendingCellUpdatesRef.current = [];
-      updateCellsMutation.mutate(updatesToSend);
-    }, 300);
-
-    return () => clearInterval(interval);
-  }, [updateCellsMutation]);
-
   // Auto-focus active cell
   useEffect(() => {
     if (!activeCell) return;
