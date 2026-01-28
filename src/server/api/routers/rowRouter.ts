@@ -1,10 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
-import {
-  assertTableAccess,
-  normalizeCells,
-  withAuthorizedTableLock,
-} from "../routerUtils";
+import { normalizeCells, assertTableAccess } from "../routerUtils";
+import { enqueueTableMutation } from "~/server/queue/tableQueue";
 
 export const rowRouter = createTRPCRouter({
   getRowsWithCells: protectedProcedure
@@ -31,53 +28,28 @@ export const rowRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const result = await withAuthorizedTableLock(
-        ctx,
-        input.tableId,
-        async (tx) => {
-          // 1. Create row
-          const newRow = await tx.row.create({
-            data: {
-              tableId: input.tableId,
-              order: input.orderNum,
-            },
-          });
+      await assertTableAccess(ctx, input.tableId);
 
-          // 2. Create empty cells
-          const columns = await tx.column.findMany({
-            where: { tableId: input.tableId },
-            select: { id: true },
-          });
+      enqueueTableMutation({
+        type: "addRow",
+        tableId: input.tableId,
+        optimisticId: input.optimisticId,
+        order: input.orderNum,
+        userId: ctx.session.user.id,
+      });
 
-          if (columns.length > 0) {
-            await tx.cell.createMany({
-              data: columns.map((col) => ({
-                rowId: newRow.id,
-                columnId: col.id,
-                value: "",
-              })),
-            });
-          }
-
-          return newRow;
-        },
-      );
-      return { row: result, optimisticId: input.optimisticId };
+      return { optimisticId: input.optimisticId };
     }),
 
   deleteRow: protectedProcedure
     .input(z.object({ tableId: z.string(), rowId: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      await withAuthorizedTableLock(ctx, input.tableId, async (tx) => {
-        await tx.cell.deleteMany({
-          where: { rowId: input.rowId },
-        });
-
-        await tx.row.delete({
-          where: { id: input.rowId },
-        });
+    .mutation(async ({ input }) => {
+      const mutationId = enqueueTableMutation({
+        type: "deleteRow",
+        tableId: input.tableId,
+        rowId: input.rowId,
       });
 
-      return { rowId: input.rowId };
+      return { rowId: input.rowId, mutationId };
     }),
 });

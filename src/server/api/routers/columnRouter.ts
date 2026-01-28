@@ -1,10 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
-import {
-  assertTableAccess,
-  withAuthorizedTableLock,
-  withTableLock,
-} from "../routerUtils";
+import { assertTableAccess } from "../routerUtils";
+import { enqueueTableMutation } from "~/server/queue/tableQueue";
 
 export const columnRouter = createTRPCRouter({
   getColumns: protectedProcedure
@@ -30,59 +27,31 @@ export const columnRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const result = await withAuthorizedTableLock(
-        ctx,
-        input.tableId,
-        async (tx) => {
-          return withTableLock(tx, input.tableId, async () => {
-            // 1. Create column
-            const newColumn = await tx.column.create({
-              data: {
-                tableId: input.tableId,
-                name: input.label ?? "Column",
-                columnType: input.type ?? "text",
-                order: input.orderNum,
-              },
-            });
+      await assertTableAccess(ctx, input.tableId);
 
-            // 2. Create empty cells
-            const rows = await tx.row.findMany({
-              where: { tableId: input.tableId },
-              select: { id: true },
-            });
+      enqueueTableMutation({
+        type: "addColumn",
+        tableId: input.tableId,
+        optimisticId: input.optimisticId,
+        order: input.orderNum,
+        name: input.label ?? "Column",
+        columnType: input.type ?? "text",
+        userId: ctx.session.user.id,
+      });
 
-            if (rows.length > 0) {
-              await tx.cell.createMany({
-                data: rows.map((row) => ({
-                  rowId: row.id,
-                  columnId: newColumn.id,
-                  value: "",
-                })),
-              });
-            }
-
-            return newColumn;
-          });
-        },
-      );
-
-      return { column: result, optimisticId: input.optimisticId };
+      return { optimisticId: input.optimisticId };
     }),
 
   deleteColumn: protectedProcedure
     .input(z.object({ tableId: z.string(), columnId: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      await withAuthorizedTableLock(ctx, input.tableId, async (tx) => {
-        await tx.cell.deleteMany({
-          where: { columnId: input.columnId },
-        });
-
-        await tx.column.delete({
-          where: { id: input.columnId },
-        });
+    .mutation(async ({ input }) => {
+      const mutationId = enqueueTableMutation({
+        type: "deleteColumn",
+        tableId: input.tableId,
+        columnId: input.columnId,
       });
 
-      return { columnId: input.columnId };
+      return { columnId: input.columnId, mutationId };
     }),
 
   renameColumn: protectedProcedure
@@ -93,13 +62,18 @@ export const columnRouter = createTRPCRouter({
         newLabel: z.string(),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
-      return withAuthorizedTableLock(ctx, input.tableId, async (tx) => {
-        const column = await tx.column.update({
-          where: { id: input.columnId, tableId: input.tableId },
-          data: { name: input.newLabel },
-        });
-        return column;
+    .mutation(async ({ input }) => {
+      const mutationId = enqueueTableMutation({
+        type: "renameColumn",
+        tableId: input.tableId,
+        columnId: input.columnId,
+        newLabel: input.newLabel,
       });
+
+      return {
+        columnId: input.columnId,
+        newLabel: input.newLabel,
+        mutationId,
+      };
     }),
 });
