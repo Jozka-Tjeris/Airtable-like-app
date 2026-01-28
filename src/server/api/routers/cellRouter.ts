@@ -40,7 +40,7 @@ export const cellRouter = createTRPCRouter({
       const grouped = groupByTable(input);
 
       for (const [tableId, updates] of grouped) {
-        enqueueTableMutation({
+        void enqueueTableMutation({
           type: "updateCells",
           tableId,
           userId: ctx.session.user.id,
