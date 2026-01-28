@@ -21,7 +21,8 @@ export function enqueueTableMutation(mutation: TableMutation) {
     queues.set(mutation.tableId, [item]);
   }
 
-  processQueue(mutation.tableId);
+  // fire-and-forget background processing
+  void processQueue(mutation.tableId);
   return mutationId;
 }
 
@@ -46,6 +47,6 @@ async function processQueue(tableId: string) {
     }
   } finally {
     running.delete(tableId);
-    if (queue.length > 0) processQueue(tableId);
+    if (queue.length > 0) void processQueue(tableId);
   }
 }

@@ -1,4 +1,5 @@
 import type { ColumnType } from "~/components/table/controller/tableTypes";
+import type { ViewConfig } from "../api/viewsConfigTypes";
 
 export type UpdateCellsMutation = {
   type: "updateCells";
@@ -48,13 +49,53 @@ export type RenameColumnMutation = {
   newLabel: string;
 };
 
+export type RenameTableMutation = {
+  type: "renameTable";
+  tableId: string;
+  newName: string;
+};
+
+export type DeleteTableMutation = {
+  type: "deleteTable";
+  tableId: string;
+};
+
+export type CreateViewMutation = {
+  type: "createView";
+  tableId: string;
+  optimisticId: string; // generated client-side
+  name: string;
+  config: ViewConfig;
+  isDefault?: boolean;
+};
+
+export type UpdateViewMutation = {
+  type: "updateView";
+  tableId: string;
+  viewId: string;
+  name?: string;
+  config?: ViewConfig;
+  isDefault?: boolean;
+};
+
+export type DeleteViewMutation = {
+  type: "deleteView";
+  tableId: string;
+  viewId: string;
+};
+
 export type TableMutation =
   | UpdateCellsMutation
   | AddRowMutation
   | AddColumnMutation
   | DeleteRowMutation
   | DeleteColumnMutation
-  | RenameColumnMutation;
+  | RenameColumnMutation
+  | RenameTableMutation
+  | DeleteTableMutation
+  | CreateViewMutation
+  | UpdateViewMutation
+  | DeleteViewMutation;
 
 export type QueueItem = {
   id: string;

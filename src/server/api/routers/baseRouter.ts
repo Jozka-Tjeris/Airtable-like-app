@@ -1,4 +1,3 @@
-// src/server/api/routers/base.ts
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
@@ -65,52 +64,53 @@ export const baseRouter = createTRPCRouter({
   deleteBase: protectedProcedure
     .input(z.object({ baseId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db.$transaction(async (tx) => {
-        const base = await tx.base.findFirst({
-          where: {
-            id: input.baseId,
-            ownerId: ctx.session.user.id,
-          },
-          select: { id: true },
+      // 1. Assert ownership
+      const base = await ctx.db.base.findFirst({
+        where: {
+          id: input.baseId,
+          ownerId: ctx.session.user.id,
+        },
+        select: { id: true },
+      });
+
+      if (!base) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      // 2. Fetch tables
+      const tables = await ctx.db.table.findMany({
+        where: { baseId: input.baseId },
+        select: { id: true },
+      });
+
+      const tableIds = tables.map(t => t.id);
+
+      // 3. Cleanup (idempotent)
+      if (tableIds.length > 0) {
+        await ctx.db.cell.deleteMany({
+          where: { row: { tableId: { in: tableIds } } },
         });
 
-        if (!base) {
-          throw new TRPCError({ code: "NOT_FOUND" });
-        }
-
-        // Explicit cleanup (even though cascades exist)
-        const tables = await tx.table.findMany({
-          where: { baseId: input.baseId },
-          select: { id: true },
-        });
-
-        const tableIds = tables.map((t) => t.id);
-
-        await tx.cell.deleteMany({
-          where: {
-            row: { tableId: { in: tableIds } },
-          },
-        });
-
-        await tx.row.deleteMany({
+        await ctx.db.row.deleteMany({
           where: { tableId: { in: tableIds } },
         });
 
-        await tx.column.deleteMany({
+        await ctx.db.column.deleteMany({
           where: { tableId: { in: tableIds } },
         });
 
-        await tx.view.deleteMany({
+        await ctx.db.view.deleteMany({
           where: { tableId: { in: tableIds } },
         });
 
-        await tx.table.deleteMany({
-          where: { baseId: input.baseId },
+        await ctx.db.table.deleteMany({
+          where: { id: { in: tableIds } },
         });
+      }
 
-        await tx.base.delete({
-          where: { id: input.baseId },
-        });
+      // 4. Delete base
+      await ctx.db.base.delete({
+        where: { id: input.baseId },
       });
 
       return { baseId: input.baseId };

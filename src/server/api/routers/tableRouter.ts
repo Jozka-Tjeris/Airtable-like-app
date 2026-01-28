@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
-import { assertTableAccess, withAuthorizedTableLock } from "../routerUtils";
+import { assertTableAccess } from "../routerUtils";
+import { enqueueTableMutation } from "~/server/queue/tableQueue";
 
 export const tableRouter = createTRPCRouter({
   getTable: protectedProcedure
@@ -68,68 +69,33 @@ export const tableRouter = createTRPCRouter({
     }),
 
   renameTable: protectedProcedure
-    .input(
-      z.object({
-        tableId: z.string(),
-        name: z.string().min(1),
-      }),
-    )
+  .input(z.object({ tableId: z.string(), name: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
-      const result = await ctx.db.table.updateMany({
-        where: {
-          id: input.tableId,
-          base: { ownerId: ctx.session.user.id },
-        },
-        data: { name: input.name },
+      await assertTableAccess(ctx, input.tableId);
+
+      const mutationId = enqueueTableMutation({
+        type: "renameTable",
+        tableId: input.tableId,
+        newName: input.name,
       });
 
-      if (result.count === 0) {
-        throw new TRPCError({ code: "NOT_FOUND" });
-      }
-
-      return { tableId: input.tableId };
+      return {
+        tableId: input.tableId,
+        name: input.name,
+        mutationId,
+      };
     }),
 
   deleteTable: protectedProcedure
     .input(z.object({ tableId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      return withAuthorizedTableLock(ctx, input.tableId, async (tx) => {
-        const table = await tx.table.findFirst({
-          where: {
-            id: input.tableId,
-            base: { ownerId: ctx.session.user.id },
-          },
-          select: { id: true },
-        });
+      await assertTableAccess(ctx, input.tableId);
 
-        if (!table) {
-          throw new TRPCError({ code: "NOT_FOUND" });
-        }
-
-        // Explicit child cleanup
-        await tx.cell.deleteMany({
-          where: {
-            row: { tableId: input.tableId },
-          },
-        });
-
-        await tx.row.deleteMany({
-          where: { tableId: input.tableId },
-        });
-
-        await tx.column.deleteMany({
-          where: { tableId: input.tableId },
-        });
-
-        await tx.view.deleteMany({
-          where: { tableId: input.tableId },
-        });
-
-        await tx.table.delete({
-          where: { id: input.tableId },
-        });
+      const mutationId = enqueueTableMutation({
+        type: "deleteTable",
+        tableId: input.tableId,
       });
 
-      return { tableId: input.tableId };
+      return { tableId: input.tableId, mutationId };
     }),
 });
